@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon — Incident response that doesn't wake the whole team</title>
+  <meta name="description" content="Beacon watches your services, figures out who owns the failing part, and pages that one person.">
+  <link rel="stylesheet" href="styles.css">
+  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────── -->
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="logo-dot"></span>beacon</div>
+    <div class="nav-links">
+      <a href="#product">Product</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#docs">Docs</a>
+    </div>
+    <div class="nav-cta">
+      <button id="navSignInBtn" class="btn-ghost">Sign in</button>
+      <div class="nav-auth-wrapper">
+        <div id="userAvatar" class="user-avatar" style="display:none;" title="Account"></div>
+        <div id="userMenu" class="user-menu">
+          <div class="user-menu-header">
+            <div id="menuUserName" class="user-menu-name">—</div>
+            <div id="menuUserEmail" class="user-menu-email">—</div>
+          </div>
+          <button class="user-menu-item" onclick="window.location.href='dashboard.html'">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+          </button>
+          <button id="logoutBtn" class="user-menu-item danger">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign out
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="heroTrialBtn">Start free trial</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Auth Modal ──────────────────────────────────────────── -->
+<div id="authModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <button id="modalClose" class="modal-close" aria-label="Close">✕</button>
+    <div class="modal-logo"><span class="logo-dot"></span>beacon</div>
+    <h2 id="modalTitle">Welcome back</h2>
+    <p class="sub-text">Sign in to your workspace to manage on-call schedules and incidents.</p>
+
+    <!-- Auth error message -->
+    <div id="authStatus" style="display:none;background:rgba(229,105,122,0.12);border:1px solid rgba(229,105,122,0.3);color:#E5697A;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;line-height:1.5;"></div>
+
+    <!-- Google Sign-In button -->
+    <button class="btn-google" id="googleSignInBtn" type="button">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="divider">or</div>
+    <p style="font-size:13.5px;color:var(--text-dim);text-align:center;">
+      Don't have an account?
+      <a href="#" style="color:var(--violet);" id="trialLink">Start free trial</a>
+    </p>
+    <p class="modal-note">
+      By signing in you agree to Beacon's <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+    </p>
+  </div>
+</div>
+
+<!-- ── Hero ───────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1 class="display">Route the alert to the right engineer, not the whole channel.</h1>
+      <p class="sub">Beacon watches your services, figures out who owns the failing part, and pages that one person — with the context they need to fix it before it becomes an outage.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary open-modal-btn">Start free trial</button>
+        <a href="#how" class="btn btn-outline">Watch a live incident</a>
+      </div>
+      <div class="trust-line">Running on-call for teams at</div>
+      <div class="trust-logos">
+        <span>Northwind</span><span>Fernbank</span><span>Ovaltype</span>
+        <span>Cursive</span><span>Ledgerly</span>
+      </div>
+    </div>
+    <div class="feed-card">
+      <div class="feed-head">
+        <div class="feed-head-left"><span class="pulse-dot"></span>Live incident feed</div>
+        <span class="mono" style="font-size:11.5px;color:var(--text-faint);">#platform-api</span>
+      </div>
+      <div class="feed-body" id="feedBody"></div>
+      <div class="feed-foot">
+        <span>3 responders online</span>
+        <span class="mono">avg ack 47s</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats ──────────────────────────────────────────────── -->
+<section class="stats">
+  <div class="wrap">
+    <div><div class="stat-num display"><span>41%</span></div><div class="stat-label">faster mean time to acknowledge</div></div>
+    <div><div class="stat-num display">6,200+</div><div class="stat-label">services monitored across customers</div></div>
+    <div><div class="stat-num display">&lt;90s</div><div class="stat-label">median page-to-ack time</div></div>
+    <div><div class="stat-num display">99.98%</div><div class="stat-label">Beacon's own uptime, last 12 months</div></div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────── -->
+<section id="product" class="wrap">
+  <div class="feature-block">
+    <div class="feature-copy">
+      <h3 class="display">Ownership-aware routing</h3>
+      <p>Most paging tools ask a human to maintain a rotation and hope it's current. Beacon reads your service graph and git history, so an alert on the checkout service pages whoever actually owns checkout — this week, not last quarter.</p>
+      <ul class="feature-list">
+        <li>Ownership inferred from deploy history and code paths, kept current automatically</li>
+        <li>Falls back cleanly through a rotation if the owner is unreachable</li>
+        <li>Shows the responder the last three deploys before they even open a laptop</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div class="diagram">
+        <div class="diagram-row"><div class="diagram-node active"><span class="k">alert</span>checkout-api · latency p99 &gt; 2.4s</div></div>
+        <div class="diagram-connector"></div>
+        <div class="diagram-row"><div class="diagram-node"><span class="k">owner resolved</span>@priya · last deploy 14m ago</div></div>
+        <div class="diagram-connector"></div>
+        <div class="diagram-row"><div class="diagram-node"><span class="k">paged</span>SMS + call · ack in 38s</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-block reverse">
+    <div class="feature-copy">
+      <h3 class="display">Set rules in code, not a settings page</h3>
+      <p>Escalation policies live in a config file next to your service definitions, reviewed in pull requests like everything else.</p>
+      <ul class="feature-list">
+        <li>Version-controlled escalation policies, one per service</li>
+        <li>Test a policy against last month's real alerts before it goes live</li>
+        <li>Full audit trail of every routing decision, queryable via API</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div class="code-panel">
+        <div class="code-panel-head">escalation/checkout-api.yml</div>
+        <pre><span class="c-key">service:</span> <span class="c-str">checkout-api</span>
+<span class="c-key">severity:</span>
+  <span class="c-key">high:</span>
+    <span class="c-key">notify:</span> <span class="c-str">owner</span>
+    <span class="c-key">timeout:</span> 90s
+    <span class="c-key">escalate_to:</span> <span class="c-str">team:payments</span>
+  <span class="c-key">critical:</span>
+    <span class="c-key">notify:</span> [<span class="c-str">owner</span>, <span class="c-str">team:payments</span>]
+    <span class="c-key">timeout:</span> 45s
+    <span class="c-key">escalate_to:</span> <span class="c-str">oncall:secondary</span>
+<span class="c-com"># reviewed in the same PR as the deploy</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ────────────────────────────────────────── -->
+<section id="how" class="how">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 class="display">From first signal to resolved, in three steps</h2>
+      <p>No dashboards to babysit. Beacon does the routing work so the response can start immediately.</p>
+    </div>
+    <div class="how-steps">
+      <div class="how-step"><div class="how-num">1</div><h4>Detect</h4><p>Beacon ingests alerts from your existing monitoring — Datadog, Prometheus, or a plain webhook — and correlates duplicates into one incident.</p></div>
+      <div class="how-step"><div class="how-num">2</div><h4>Route</h4><p>The owning engineer is paged directly, with the triggering metric, recent deploys, and a link to the relevant runbook already attached.</p></div>
+      <div class="how-step"><div class="how-num">3</div><h4>Resolve</h4><p>Responders coordinate in a scoped incident channel that closes itself out and files a timeline for the postmortem automatically.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA band ────────────────────────────────────────────── -->
+<section class="cta-band">
+  <div class="wrap">
+    <h2 class="display">Your next incident is going to happen anyway.</h2>
+    <p>Give it to the person who can actually fix it, in under a minute.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-primary open-modal-btn">Start free trial</button>
+      <a href="#" class="btn btn-outline">Talk to the team</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────── -->
+<footer>
+  <div class="wrap">
+    <div class="logo"><span class="logo-dot"></span>beacon</div>
+    <div class="footer-links">
+      <a href="#">Product</a><a href="#">Pricing</a><a href="#">Docs</a>
+      <a href="#">Status</a><a href="#">Privacy</a>
+    </div>
+    <div class="footer-copy">© 2026 Beacon. Built for the people who get paged.</div>
+  </div>
+</footer>
+
+<!-- ── Firebase SDK (only loaded when real config is set) ─────── -->
+<script>
+  // Dynamically load Firebase only if real credentials are present
+  if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') {
+    const s1 = document.createElement('script');
+    s1.src = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js';
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  }
+</script>
+
+<!-- ── App scripts ─────────────────────────────────────────── -->
+<script src="firebase-config.js"></script>
+<script src="main.js"></script>
+<script src="auth.js"></script>
+<script>
+  // All CTAs open the sign-in modal
+  document.querySelectorAll('.open-modal-btn, #heroTrialBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('authModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+  });
+  document.getElementById('trialLink')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeModal();
+  });
+</script>
+
+</body>
+</html>

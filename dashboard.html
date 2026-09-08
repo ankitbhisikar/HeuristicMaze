@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Beacon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    @keyframes shimmer { 0%   { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .dash-layout { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 68px); }
+    .sidebar { border-right:1px solid var(--border); padding:24px 0; position:sticky; top:68px; height:calc(100vh - 68px); overflow-y:auto; }
+    .sidebar-section { padding:0 12px; margin-bottom:28px; }
+    .sidebar-label { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint); padding:0 10px; margin-bottom:6px; }
+    .sidebar-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:13.5px; color:var(--text-dim); cursor:pointer; text-decoration:none; transition:background .12s,color .12s; }
+    .sidebar-item:hover { background:var(--panel-2); color:var(--text); }
+    .sidebar-item.active { background:rgba(124,156,255,.12); color:var(--violet); }
+    .sidebar-item svg { opacity:.7; flex-shrink:0; }
+    .sidebar-item.active svg { opacity:1; }
+    .sidebar-badge { margin-left:auto; background:rgba(240,163,69,.15); color:var(--amber); font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; min-width:18px; text-align:center; }
+
+    /* ── Main ────────────────────────────────────────────────── */
+    .dash-main { padding:32px 36px; overflow-y:auto; }
+    .dash-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+    .dash-title { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; letter-spacing:-.01em; }
+    .dash-subtitle { margin-top:3px; font-size:13.5px; color:var(--text-faint); }
+
+    /* ── Profile banner ──────────────────────────────────────── */
+    .profile-banner { background:linear-gradient(135deg,rgba(124,156,255,.08),rgba(124,156,255,.03)); border:1px solid rgba(124,156,255,.18); border-radius:14px; padding:22px 28px; display:flex; align-items:center; gap:20px; margin-bottom:28px; position:relative; overflow:hidden; animation:fadeIn .4s ease; }
+    .profile-banner::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle,rgba(124,156,255,.12),transparent 70%); pointer-events:none; }
+    .profile-avatar-lg { width:52px; height:52px; border-radius:50%; background:var(--violet); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; color:#0B0D10; flex-shrink:0; border:2px solid rgba(124,156,255,.4); overflow:hidden; }
+    .profile-avatar-lg img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+    .profile-name { font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; }
+    .profile-email { font-size:13px; color:var(--text-dim); margin-top:2px; }
+    .profile-badge { background:rgba(111,207,151,.12); border:1px solid rgba(111,207,151,.25); color:var(--green); font-size:11px; font-weight:500; padding:3px 10px; border-radius:20px; margin-top:8px; display:inline-flex; align-items:center; gap:6px; }
+    .profile-badge::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); animation:pulse 2s ease-out infinite; }
+
+    /* ── Stats ───────────────────────────────────────────────── */
+    .dash-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+    .dash-stat-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; transition:border-color .15s; animation:fadeIn .4s ease; }
+    .dash-stat-card:hover { border-color:#3A414D; }
+    .dash-stat-label { font-size:11px; color:var(--text-faint); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em; }
+    .dash-stat-val { font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:600; letter-spacing:-.01em; }
+    .dash-stat-sub { margin-top:4px; font-size:12px; color:var(--text-faint); }
+    .c-amber { color:var(--amber); } .c-green { color:var(--green); } .c-violet { color:var(--violet); } .c-red { color:var(--red); }
+
+    /* ── Panels ──────────────────────────────────────────────── */
+    .dash-panels { display:grid; grid-template-columns:1fr 340px; gap:18px; }
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeIn .5s ease; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
+    .panel-title { font-size:13.5px; font-weight:600; color:var(--text); }
+    .panel-actions { display:flex; align-items:center; gap:8px; }
+    .panel-count { font-size:11px; color:var(--text-faint); }
+
+    /* ── Incident rows ───────────────────────────────────────── */
+    .incident-row { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid rgba(38,43,51,.5); transition:background .1s; }
+    .incident-row:last-child { border-bottom:none; }
+    .incident-row:hover { background:rgba(255,255,255,.02); }
+    .incident-row.resolved { opacity:.6; }
+
+    .inc-sev { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .sev-critical { background:var(--red);   box-shadow:0 0 8px rgba(229,105,122,.5); }
+    .sev-high     { background:var(--amber); box-shadow:0 0 6px rgba(240,163,69,.4); }
+    .sev-low      { background:var(--green); }
+
+    .inc-info { flex:1; min-width:0; }
+    .inc-title { font-size:13px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .inc-meta  { font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+
+    .inc-status { font-size:11px; padding:3px 8px; border-radius:4px; font-weight:500; white-space:nowrap; }
+    .status-open         { background:rgba(229,105,122,.12); color:var(--red); }
+    .status-acknowledged { background:rgba(124,156,255,.12); color:var(--violet); }
+    .status-resolved     { background:rgba(111,207,151,.12); color:var(--green); }
+
+    .inc-btns { display:flex; gap:5px; flex-shrink:0; }
+    .inc-btn { padding:4px 9px; border-radius:6px; font-size:11px; font-weight:500; cursor:pointer; border:none; transition:all .12s; }
+    .inc-btn-ack  { background:rgba(124,156,255,.12); color:var(--violet); }
+    .inc-btn-ack:hover  { background:rgba(124,156,255,.22); }
+    .inc-btn-res  { background:rgba(111,207,151,.12); color:var(--green); }
+    .inc-btn-res:hover  { background:rgba(111,207,151,.22); }
+    .inc-btn-del  { background:rgba(229,105,122,.1);  color:var(--red); }
+    .inc-btn-del:hover  { background:rgba(229,105,122,.2); }
+    .inc-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+    /* ── On-call ─────────────────────────────────────────────── */
+    .oncall-item { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid rgba(38,43,51,.5); }
+    .oncall-item:last-child { border-bottom:none; }
+    .oncall-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; }
+    .oncall-name  { font-size:13px; font-weight:500; color:var(--text); }
+    .oncall-role  { font-size:11.5px; color:var(--text-faint); }
+    .oncall-shift { margin-left:auto; font-size:11.5px; color:var(--text-faint); }
+
+    /* ── Empty state ─────────────────────────────────────────── */
+    .empty-state { padding:40px 20px; text-align:center; color:var(--text-faint); }
+    .empty-state svg { margin-bottom:12px; opacity:.35; }
+    .empty-state p { font-size:13px; margin:0; }
+
+    /* ── Skeleton ────────────────────────────────────────────── */
+    .skeleton { background:linear-gradient(90deg,var(--panel) 25%,var(--panel-2) 50%,var(--panel) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:6px; display:inline-block; }
+
+    /* ── New Incident Modal ───────────────────────────────────── */
+    .modal-overlay.open { display:flex; }
+    #incidentModal { display:none; }
+    #incidentModal.open { display:flex; }
+
+    .form-group { margin-bottom:16px; }
+    .form-label { display:block; font-size:12.5px; font-weight:500; color:var(--text-dim); margin-bottom:6px; }
+    .form-input, .form-select {
+      width:100%; padding:10px 13px; background:var(--panel-2);
+      border:1px solid var(--border); border-radius:8px;
+      color:var(--text); font-size:13.5px; outline:none;
+      transition:border-color .15s; box-sizing:border-box;
+      font-family:inherit;
+    }
+    .form-input:focus, .form-select:focus { border-color:var(--violet); }
+    .form-select option { background:var(--panel-2); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    #toastContainer { position:fixed; bottom:24px; right:24px; z-index:999; display:flex; flex-direction:column; gap:8px; }
+    .toast { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px 18px; font-size:13px; color:var(--text); box-shadow:0 8px 24px rgba(0,0,0,.3); animation:fadeIn .25s ease; display:flex; align-items:center; gap:10px; max-width:300px; }
+    .toast.success { border-left:3px solid var(--green); }
+    .toast.error   { border-left:3px solid var(--red); }
+
+    /* ── Spinner overlay (for action buttons) ────────────────── */
+    .spinning { position:relative; pointer-events:none; opacity:.6; }
+
+    /* ── Tab Views ───────────────────────────────────────────── */
+    .tab-view { display:none; animation:fadeIn .3s ease; }
+    .tab-view.active { display:block; }
+
+    /* ── Filter Pills & Search ───────────────────────────────── */
+    .filter-bar { display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+    .filter-pill { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; background:var(--panel); border:1px solid var(--border); color:var(--text-dim); cursor:pointer; transition:all .15s; }
+    .filter-pill:hover { border-color:#4A5260; color:var(--text); }
+    .filter-pill.active { background:rgba(124,156,255,.15); border-color:var(--violet); color:var(--violet); font-weight:600; }
+    .search-box { padding:7px 12px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:12.5px; outline:none; min-width:200px; margin-left:auto; }
+    .search-box:focus { border-color:var(--violet); }
+
+    /* ── Admin Badges & Checker Card ─────────────────────────── */
+    .admin-tag { background:linear-gradient(135deg,rgba(240,163,69,.2),rgba(229,105,122,.2)); border:1px solid rgba(240,163,69,.45); color:var(--amber); font-size:11px; font-weight:600; padding:3px 9px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; }
+    .member-tag { background:rgba(124,156,255,.12); border:1px solid rgba(124,156,255,.25); color:var(--violet); font-size:11px; font-weight:500; padding:3px 9px; border-radius:6px; display:inline-flex; align-items:center; gap:5px; }
+
+    .admin-checker-card { background:var(--panel); border:1px solid rgba(124,156,255,.25); border-radius:14px; padding:22px 24px; margin-bottom:24px; position:relative; overflow:hidden; }
+    .admin-checker-card::before { content:''; position:absolute; top:0; right:0; width:160px; height:100%; background:radial-gradient(circle at 100% 50%, rgba(240,163,69,.08), transparent 70%); pointer-events:none; }
+    .admin-input-row { display:flex; gap:10px; margin-top:14px; }
+    .admin-input { flex:1; padding:10px 14px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:13px; outline:none; }
+    .admin-input:focus { border-color:var(--violet); }
+    .admin-result-box { margin-top:14px; padding:12px 16px; border-radius:8px; font-size:13px; display:none; }
+
+    /* ── Data Tables ─────────────────────────────────────────── */
+    .table-container { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .dash-table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; }
+    .dash-table th { background:var(--panel-2); color:var(--text-faint); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding:12px 18px; border-bottom:1px solid var(--border); }
+    .dash-table td { padding:14px 18px; border-bottom:1px solid rgba(38,43,51,.5); vertical-align:middle; color:var(--text); }
+    .dash-table tr:last-child td { border-bottom:none; }
+    .dash-table tr:hover td { background:rgba(255,255,255,.015); }
+
+    /* ── Services Grid ───────────────────────────────────────── */
+    .services-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+    .service-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; transition:border-color .15s, transform .12s; }
+    .service-card:hover { border-color:#3A414D; transform:translateY(-2px); }
+    .service-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .service-name { font-size:15px; font-weight:600; font-family:'Space Grotesk',sans-serif; }
+    .service-meta-row { display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); margin-top:8px; padding-top:8px; border-top:1px solid rgba(38,43,51,.5); }
+
+    /* ── Reports Grid ────────────────────────────────────────── */
+    .reports-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:24px; }
+
+    @media (max-width:900px) {
+      .dash-layout { grid-template-columns:1fr; }
+      .sidebar { display:none; }
+      .dash-stats, .reports-grid { grid-template-columns:1fr 1fr; }
+      .dash-panels { grid-template-columns:1fr; }
+      .dash-main { padding:20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="logo" style="text-decoration:none;"><span class="logo-dot"></span>beacon</a>
+    <div class="nav-links">
+      <a href="#">Incidents</a>
+      <a href="#">Services</a>
+      <a href="#">Schedules</a>
+      <a href="#">Reports</a>
+    </div>
+    <div class="nav-cta">
+      <div id="backendBadge" style="font-size:11px;padding:4px 10px;border-radius:20px;
+        background:rgba(111,207,151,.1);border:1px solid rgba(111,207,151,.25);color:var(--green);"></div>
+      <div class="nav-auth-wrapper">
+        <div id="userAvatar" class="user-avatar" title="Account"></div>
+        <div id="userMenu" class="user-menu">
+          <div class="user-menu-header">
+            <div id="menuUserName" class="user-menu-name">—</div>
+            <div id="menuUserEmail" class="user-menu-email">—</div>
+          </div>
+          <button class="user-menu-item">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Profile
+          </button>
+          <button class="user-menu-item">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            On-call schedule
+          </button>
+          <button id="logoutBtn" class="user-menu-item danger">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign out
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── New Incident Modal ───────────────────────────────────────── -->
+<div id="incidentModal" class="modal-overlay" role="dialog" aria-labelledby="incModalTitle">
+  <div class="modal" style="max-width:480px;">
+    <button id="incModalClose" class="modal-close" aria-label="Close">✕</button>
+    <h2 id="incModalTitle" style="margin-bottom:4px;">New Incident</h2>
+    <p class="sub-text" style="margin-bottom:20px;">Fill in the details to create a new incident and notify the on-call team.</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="incService">Service</label>
+        <input class="form-input" id="incService" placeholder="e.g. checkout-api" type="text"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="incSeverity">Severity</label>
+        <select class="form-select" id="incSeverity">
+          <option value="critical">🔴 Critical</option>
+          <option value="high" selected>🟠 High</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="incTitle">Incident title</label>
+      <input class="form-input" id="incTitle" placeholder="e.g. Latency p99 > 2.4s" type="text"/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="incOwner">Owner / Team</label>
+      <input class="form-input" id="incOwner" placeholder="@handle or team name" type="text"/>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button id="incModalCancel" class="btn btn-outline">Cancel</button>
+      <button id="incModalSubmit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create Incident
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast container ──────────────────────────────────────────── -->
+<div id="toastContainer"></div>
+
+<!-- ── Layout ────────────────────────────────────────────────────── -->
+<div class="dash-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
+      <a href="javascript:void(0)" class="sidebar-item active" data-view="dashboard" id="btnNavDashboard" onclick="switchView('dashboard')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="incidents" id="btnNavIncidents" onclick="switchView('incidents')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Incidents
+        <span class="sidebar-badge" id="sidebarBadge">—</span>
+      </a>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="services" id="btnNavServices" onclick="switchView('services')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Services
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">On-call</div>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="schedules" id="btnNavSchedules" onclick="switchView('schedules')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Schedules
+      </a>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="teams" id="btnNavTeams" onclick="switchView('teams')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Teams
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Insights</div>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="reports" id="btnNavReports" onclick="switchView('reports')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Reports
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <div class="dash-title" id="dashGreeting">
+          <span class="skeleton" style="width:220px;height:24px;">&nbsp;</span>
+        </div>
+        <div class="dash-subtitle" id="dashSubtitle">Loading your workspace…</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="adminHeaderBadge"></div>
+        <button class="btn btn-primary" id="newIncidentBtn" style="display:none;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New incident
+        </button>
+      </div>
+    </div>
+
+    <!-- Profile banner -->
+    <div class="profile-banner" id="profileBanner" style="display:none;">
+      <div class="profile-avatar-lg" id="profileAvatar"></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="profile-name" id="profileName"></div>
+          <span id="userRoleBadge"></span>
+        </div>
+        <div class="profile-email" id="profileEmail"></div>
+        <div class="profile-badge" id="profileBadge">Active session</div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: DASHBOARD OVERVIEW -->
+    <div id="viewDashboard" class="tab-view active">
+      <!-- Stats -->
+      <div class="dash-stats" id="statsRow">
+        <div class="dash-stat-card"><div class="dash-stat-label">Open incidents</div><div class="skeleton" style="width:60px;height:30px;margin:8px 0 4px;">&nbsp;</div><div class="skeleton" style="width:130px;height:12px;">&nbsp;</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-label">Acknowledged</div><div class="skeleton" style="width:60px;height:30px;margin:8px 0 4px;">&nbsp;</div><div class="skeleton" style="width:100px;height:12px;">&nbsp;</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-label">Resolved today</div><div class="skeleton" style="width:60px;height:30px;margin:8px 0 4px;">&nbsp;</div><div class="skeleton" style="width:110px;height:12px;">&nbsp;</div></div>
+        <div class="dash-stat-card"><div class="dash-stat-label">Total incidents</div><div class="skeleton" style="width:60px;height:30px;margin:8px 0 4px;">&nbsp;</div><div class="skeleton" style="width:90px;height:12px;">&nbsp;</div></div>
+      </div>
+
+      <!-- Panels -->
+      <div class="dash-panels">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Recent Incidents</div>
+            <div class="panel-actions">
+              <span class="panel-count" id="incidentCount"></span>
+              <span style="font-size:11px;color:var(--text-faint);">live</span>
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease-out infinite;"></span>
+            </div>
+          </div>
+          <div id="incidentList">
+            <div class="incident-row"><div class="inc-sev skeleton" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;"><div class="skeleton" style="height:13px;width:75%;"></div><div class="skeleton" style="height:11px;width:50%;margin-top:6px;"></div></div><div class="skeleton" style="height:20px;width:70px;border-radius:4px;"></div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">On-call now</div>
+            <span style="font-size:12px;color:var(--violet);cursor:pointer;" onclick="switchView('schedules')">View Roster →</span>
+          </div>
+          <div id="oncallList">
+            <div class="oncall-item"><div class="oncall-avatar skeleton" style="width:32px;height:32px;border-radius:50%;"></div><div><div class="skeleton" style="height:13px;width:100px;"></div><div class="skeleton" style="height:11px;width:80px;margin-top:6px;"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: INCIDENTS -->
+    <div id="viewIncidents" class="tab-view">
+      <div class="filter-bar">
+        <button class="filter-pill active" data-filter="all" onclick="setIncidentFilter('all', this)">All Incidents</button>
+        <button class="filter-pill" data-filter="open" onclick="setIncidentFilter('open', this)">🔴 Open</button>
+        <button class="filter-pill" data-filter="acknowledged" onclick="setIncidentFilter('acknowledged', this)">🟣 Acknowledged</button>
+        <button class="filter-pill" data-filter="resolved" onclick="setIncidentFilter('resolved', this)">🟢 Resolved</button>
+        <input type="text" id="incidentSearchInput" class="search-box" placeholder="Search service, title, owner..." oninput="renderFullIncidentsTable()" />
+      </div>
+
+      <div class="table-container">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Service</th>
+              <th>Title</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Owner</th>
+              <th>Created At</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fullIncidentsTableBody">
+            <tr><td colspan="8" style="text-align:center;color:var(--text-faint);padding:30px;">Loading incidents from SQL backend…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 3: SERVICES -->
+    <div id="viewServices" class="tab-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:13.5px;color:var(--text-dim);">Live health status of microservices from SQL database</div>
+        <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="loadServicesView()">Refresh Services</button>
+      </div>
+      <div class="services-grid" id="servicesGridContainer">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- VIEW 4: SCHEDULES -->
+    <div id="viewSchedules" class="tab-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:13.5px;color:var(--text-dim);">On-call rotation shifts and active escalation roster</div>
+        <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="loadSchedulesView()">Sync Schedule</button>
+      </div>
+      <div class="table-container">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Shift Order</th>
+              <th>Engineer</th>
+              <th>Role & Responsibilities</th>
+              <th>Coverage Shift</th>
+              <th>Escalation Level</th>
+            </tr>
+          </thead>
+          <tbody id="schedulesTableBody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 5: TEAMS & ADMIN ID CHECK -->
+    <div id="viewTeams" class="tab-view">
+      <!-- Admin ID Verification Box -->
+      <div class="admin-checker-card">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="20" height="20" fill="none" stroke="var(--amber)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-weight:600;font-size:15.5px;color:var(--text);">Admin ID & Permission Verification</span>
+        </div>
+        <p style="font-size:12.5px;color:var(--text-faint);margin-top:4px;">
+          Check if a user ID, email, or token holds Administrator privileges in the SQL database.
+        </p>
+
+        <div class="admin-input-row">
+          <input type="text" id="adminCheckInput" class="admin-input" placeholder="Enter User ID or Email (e.g. admin_1, ankit@example.com, usr_seed_2)" value="admin_1" />
+          <button id="btnRunAdminCheck" class="btn btn-primary" onclick="handleAdminCheckClick()">
+            Verify Admin ID
+          </button>
+        </div>
+
+        <div id="adminCheckResultBox" class="admin-result-box"></div>
+      </div>
+
+      <!-- Team Members Table -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:14px;font-weight:600;color:var(--text);">Team Members in SQL Database (`users` table)</div>
+        <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="loadTeamsView()">Refresh Team</button>
+      </div>
+      <div class="table-container">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Admin Privileges</th>
+              <th>Last Login</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="teamsTableBody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 6: REPORTS -->
+    <div id="viewReports" class="tab-view">
+      <div class="reports-grid" id="reportsKpiContainer">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div style="margin-top:20px;">
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px;">Incident Frequency by Microservice (SQL Aggregation)</div>
+        <div class="table-container">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>Microservice</th>
+                <th>Total Incidents</th>
+                <th>Open</th>
+                <th>In Progress</th>
+                <th>Resolved</th>
+              </tr>
+            </thead>
+            <tbody id="reportsServiceTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Firebase SDKs ───────────────────────────────────────────── -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- ── App scripts ─────────────────────────────────────────────── -->
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════
+
+const IS_CONFIGURED = FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+
+const COLORS = {
+  violet: { bg:'rgba(124,156,255,.18)', fg:'var(--violet)' },
+  green:  { bg:'rgba(111,207,151,.18)', fg:'var(--green)' },
+  amber:  { bg:'rgba(240,163,69,.18)',  fg:'var(--amber)' },
+  red:    { bg:'rgba(229,105,122,.18)', fg:'var(--red)' },
+};
+
+const STATUS_LABEL = { open:'Open', acknowledged:'Acknowledged', resolved:'Resolved' };
+
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const d   = ts.toDate ? ts.toDate() : new Date(ts);
+  const sec = Math.floor((Date.now() - d) / 1000);
+  if (sec < 60)   return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec/60)}m ago`;
+  return `${Math.floor(sec/3600)}h ago`;
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `
+    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      ${type === 'success'
+        ? '<polyline points="20 6 9 17 4 12"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'}
+    </svg>${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════
+//  VIEW SWITCHING & NAVIGATION
+// ════════════════════════════════════════════════════════════════
+
+let currentView = 'dashboard';
+let allIncidentsCache = [];
+let currentIncidentFilter = 'all';
+let currentUserData = null;
+
+const VIEW_TITLES = {
+  dashboard: { title: name => `Welcome back, ${name} 👋`, sub: "Here's what's happening across your services right now." },
+  incidents: { title: () => "Incident Management", sub: "Browse, filter, and triage real-time incidents stored in the SQL database." },
+  services:  { title: () => "Monitored Microservices", sub: "Real-time health status, latency, and uptime from the SQLite services table." },
+  schedules: { title: () => "On-Call Rotations & Schedules", sub: "Active engineer shift coverage, rotation timeline, and escalation policies." },
+  teams:     { title: () => "Team & Admin Permissions", sub: "Inspect team members and verify Admin IDs against the SQL users table." },
+  reports:   { title: () => "Incident Analytics & Reports", sub: "Aggregated SQL metrics, resolution rates, and microservice rankings." }
+};
+
+window.switchView = function(viewName) {
+  currentView = viewName;
+
+  // Update sidebar active classes
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-view') === viewName);
+  });
+
+  // Toggle view containers
+  document.querySelectorAll('.tab-view').forEach(view => {
+    view.classList.remove('active');
+  });
+  const targetView = document.getElementById('view' + viewName.charAt(0).toUpperCase() + viewName.slice(1));
+  if (targetView) targetView.classList.add('active');
+
+  // Update header text
+  const given = currentUserData?.given_name || (currentUserData?.name ? currentUserData.name.split(' ')[0] : 'Engineer');
+  const info = VIEW_TITLES[viewName] || VIEW_TITLES.dashboard;
+  document.getElementById('dashGreeting').textContent = info.title(given);
+  document.getElementById('dashSubtitle').textContent = info.sub;
+
+  // Toggle "New Incident" button visibility
+  const newIncBtn = document.getElementById('newIncidentBtn');
+  if (newIncBtn) {
+    newIncBtn.style.display = (viewName === 'dashboard' || viewName === 'incidents') ? 'flex' : 'none';
+  }
+
+  // Load view-specific data from SQL backend
+  if (viewName === 'incidents') {
+    renderFullIncidentsTable();
+  } else if (viewName === 'services') {
+    loadServicesView();
+  } else if (viewName === 'schedules') {
+    loadSchedulesView();
+  } else if (viewName === 'teams') {
+    loadTeamsView();
+  } else if (viewName === 'reports') {
+    loadReportsView();
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+//  VIEW 2: INCIDENTS TABLE & FILTERS
+// ════════════════════════════════════════════════════════════════
+
+window.setIncidentFilter = function(status, btn) {
+  currentIncidentFilter = status;
+  document.querySelectorAll('#viewIncidents .filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderFullIncidentsTable();
+};
+
+window.renderFullIncidentsTable = function() {
+  const tbody = document.getElementById('fullIncidentsTableBody');
+  if (!tbody) return;
+
+  const search = (document.getElementById('incidentSearchInput')?.value || '').toLowerCase().trim();
+
+  let filtered = allIncidentsCache;
+  if (currentIncidentFilter !== 'all') {
+    filtered = filtered.filter(i => i.status === currentIncidentFilter);
+  }
+  if (search) {
+    filtered = filtered.filter(i => 
+      (i.service && i.service.toLowerCase().includes(search)) ||
+      (i.title && i.title.toLowerCase().includes(search)) ||
+      (i.owner && i.owner.toLowerCase().includes(search)) ||
+      (i.id && String(i.id).toLowerCase().includes(search))
+    );
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-faint);padding:40px;">No matching incidents found in database.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(inc => {
+    const isResolved = inc.status === 'resolved';
+    const btns = [];
+    if (inc.status === 'open') {
+      btns.push(`<button class="inc-btn inc-btn-ack" onclick="handleStatus('${inc._id}','acknowledged',this)">Acknowledge</button>`);
+    }
+    if (inc.status !== 'resolved') {
+      btns.push(`<button class="inc-btn inc-btn-res" onclick="handleStatus('${inc._id}','resolved',this)">Resolve</button>`);
+    }
+    btns.push(`<button class="inc-btn inc-btn-del" onclick="handleDelete('${inc._id}',this)">Delete</button>`);
+
+    return `
+      <tr data-id="${inc._id}">
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text-dim);">${inc.id || '#' + inc._id}</td>
+        <td><strong style="color:var(--text);">${inc.service}</strong></td>
+        <td>${inc.title}</td>
+        <td><span class="inc-sev sev-${inc.severity}" style="display:inline-block;vertical-align:middle;margin-right:6px;"></span>${inc.severity.toUpperCase()}</td>
+        <td><span class="inc-status status-${inc.status}">${STATUS_LABEL[inc.status] || inc.status}</span></td>
+        <td style="color:var(--violet);">${inc.owner}</td>
+        <td style="color:var(--text-faint);font-size:12px;">${timeAgo(inc.createdAt)}</td>
+        <td style="text-align:right;"><div class="inc-btns" style="justify-content:flex-end;">${btns.join('')}</div></td>
+      </tr>`;
+  }).join('');
+};
+
+// ════════════════════════════════════════════════════════════════
+//  VIEW 3: SERVICES (SQL services table)
+// ════════════════════════════════════════════════════════════════
+
+window.loadServicesView = async function() {
+  const container = document.getElementById('servicesGridContainer');
+  if (!container) return;
+  container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-faint);">Loading microservices from SQL database…</div>`;
+
+  try {
+    const services = await fetchServices();
+    if (!services.length) {
+      container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-faint);">No microservices found.</div>`;
+      return;
+    }
+
+    container.innerHTML = services.map(s => {
+      const isHealthy = s.status === 'healthy';
+      const statusColor = isHealthy ? 'var(--green)' : 'var(--amber)';
+      return `
+        <div class="service-card">
+          <div class="service-head">
+            <span class="service-name">${s.name}</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 8px;border-radius:12px;background:${isHealthy ? 'rgba(111,207,151,.12)' : 'rgba(240,163,69,.12)'};color:${statusColor};border:1px solid ${isHealthy ? 'rgba(111,207,151,.3)' : 'rgba(240,163,69,.3)'}">
+              <span style="width:6px;height:6px;border-radius:50%;background:${statusColor};display:inline-block;"></span>
+              ${s.status.toUpperCase()}
+            </span>
+          </div>
+          <div class="service-meta-row">
+            <span>Uptime: <strong style="color:var(--text);">${s.uptime || '99.9%'}</strong></span>
+            <span>Latency: <strong style="color:var(--text);">${s.latency || '45ms'}</strong></span>
+          </div>
+          <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+            <button class="btn btn-outline" style="font-size:11px;padding:5px 10px;" onclick="handleToggleServiceHealth('${s.id || s.name}', '${s.status}', this)">
+              ${isHealthy ? 'Simulate Degradation' : 'Restore Healthy'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px;">Failed to load services: ${err.message}</div>`;
+  }
+};
+
+window.handleToggleServiceHealth = async function(id, currentStatus, btn) {
+  btn.disabled = true;
+  const newStatus = currentStatus === 'healthy' ? 'degraded' : 'healthy';
+  try {
+    await pingService(id, newStatus);
+    showToast(`Service updated in SQL database → ${newStatus}`);
+    loadServicesView();
+  } catch (_) {
+    showToast('Failed to update service status', 'error');
+    btn.disabled = false;
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+//  VIEW 4: SCHEDULES (SQL oncall table)
+// ════════════════════════════════════════════════════════════════
+
+window.loadSchedulesView = function() {
+  const tbody = document.getElementById('schedulesTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-faint);">Loading schedule roster from SQL database…</td></tr>`;
+
+  listenOncall(oncall => {
+    if (!oncall.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-faint);">No active shifts defined.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = oncall.map(o => {
+      const c = ONCALL_COLORS[o.color] || ONCALL_COLORS.violet;
+      const isPrimary = o.role.toLowerCase().includes('primary');
+      return `
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-weight:600;">Shift #${o.sort_order || o.order || 1}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="oncall-avatar" style="background:${c.bg};color:${c.fg};width:28px;height:28px;font-size:11px;">${o.initials}</div>
+              <span style="font-weight:600;color:var(--text);">${o.name}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-dim);">${o.role}</td>
+          <td><span style="font-size:12px;color:var(--violet);background:rgba(124,156,255,.1);padding:3px 8px;border-radius:4px;">${o.shift}</span></td>
+          <td>
+            <span class="${isPrimary ? 'admin-tag' : 'member-tag'}">
+              ${isPrimary ? 'Tier 1 Primary' : 'Tier 2 Secondary'}
+            </span>
+          </td>
+        </tr>`;
+    }).join('');
+  });
+};
+
+// ════════════════════════════════════════════════════════════════
+//  VIEW 5: TEAMS & ADMIN ID CHECKER
+// ════════════════════════════════════════════════════════════════
+
+window.loadTeamsView = async function() {
+  const tbody = document.getElementById('teamsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-faint);">Loading team members from SQL users table…</td></tr>`;
+
+  try {
+    const users = await fetchUsers();
+    tbody.innerHTML = users.map(u => {
+      const isAdmin = u.is_admin === 1 || u.role === 'admin' || u.email === 'admin@beacon.app';
+      return `
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);">${u.id}</td>
+          <td><strong style="color:var(--text);">${u.name}</strong></td>
+          <td style="color:var(--text-dim);">${u.email}</td>
+          <td>
+            <span class="${isAdmin ? 'admin-tag' : 'member-tag'}">
+              ${isAdmin ? '👑 Admin' : '👤 Engineer'}
+            </span>
+          </td>
+          <td>
+            <span style="font-size:12px;color:${isAdmin ? 'var(--green)' : 'var(--text-faint)'};">
+              ${isAdmin ? '● Full Access' : '○ Standard Member'}
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--text-faint);">${timeAgo(u.last_login || u.lastLogin)}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-outline" style="font-size:11px;padding:4px 9px;" onclick="checkAdminQuick('${u.id}')">
+              Verify ID
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px;">Error: ${err.message}</td></tr>`;
+  }
+};
+
+window.checkAdminQuick = function(id) {
+  const input = document.getElementById('adminCheckInput');
+  if (input) {
+    input.value = id;
+    handleAdminCheckClick();
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
+
+window.handleAdminCheckClick = async function() {
+  const input = document.getElementById('adminCheckInput');
+  const resultBox = document.getElementById('adminCheckResultBox');
+  const btn = document.getElementById('btnRunAdminCheck');
+  if (!input || !resultBox) return;
+
+  const val = input.value.trim();
+  if (!val) {
+    showToast('Please enter a User ID or Email to check', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking SQL…';
+  resultBox.style.display = 'none';
+
+  try {
+    const res = await checkAdminId(val);
+    resultBox.style.display = 'block';
+
+    if (res.isAdmin) {
+      resultBox.className = 'admin-result-box';
+      resultBox.style.background = 'rgba(111,207,151,.12)';
+      resultBox.style.border = '1px solid rgba(111,207,151,.35)';
+      resultBox.style.color = 'var(--green)';
+      resultBox.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">👑</span>
+          <div>
+            <div style="font-weight:600;font-size:14px;">ADMIN VERIFIED: ${res.adminId || val}</div>
+            <div style="font-size:12.5px;margin-top:3px;color:var(--text-dim);">${res.message || 'User has full administrative privileges'}</div>
+            <div style="font-size:11.5px;color:var(--green);margin-top:4px;">Permissions: Full Database CRUD, Incident Deletion, Roster & System Control.</div>
+          </div>
+        </div>`;
+      showToast(`Admin ID Verified: ${res.adminId || val}`);
+    } else {
+      resultBox.className = 'admin-result-box';
+      resultBox.style.background = 'rgba(240,163,69,.12)';
+      resultBox.style.border = '1px solid rgba(240,163,69,.35)';
+      resultBox.style.color = 'var(--amber)';
+      resultBox.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">👤</span>
+          <div>
+            <div style="font-weight:600;font-size:14px;">STANDARD MEMBER (Not an Admin)</div>
+            <div style="font-size:12.5px;margin-top:3px;color:var(--text-dim);">${res.message || 'User is a regular team member without Admin rights.'}</div>
+          </div>
+        </div>`;
+      showToast(`Member ID: ${val} (Not Admin)`);
+    }
+  } catch (err) {
+    showToast('Failed to check admin ID: ' + err.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Verify Admin ID';
+};
+
+// ════════════════════════════════════════════════════════════════
+//  VIEW 6: REPORTS (SQL Aggregation Analytics)
+// ════════════════════════════════════════════════════════════════
+
+window.loadReportsView = async function() {
+  const kpiBox = document.getElementById('reportsKpiContainer');
+  const tbody  = document.getElementById('reportsServiceTableBody');
+  if (!kpiBox || !tbody) return;
+
+  kpiBox.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-faint);">Loading SQL analytics…</div>`;
+
+  try {
+    const data = await fetchReports();
+
+    // Render 4 KPI cards
+    kpiBox.innerHTML = `
+      <div class="dash-stat-card">
+        <div class="dash-stat-label">Resolution Rate</div>
+        <div class="dash-stat-val c-green">${data.resolutionRate || '100%'}</div>
+        <div class="dash-stat-sub">Resolved vs Total</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-label">Total Recorded</div>
+        <div class="dash-stat-val">${data.totalIncidents || 0}</div>
+        <div class="dash-stat-sub">SQL database entries</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-label">Resolved Incidents</div>
+        <div class="dash-stat-val c-violet">${data.resolvedIncidents || 0}</div>
+        <div class="dash-stat-sub">Closed tickets</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-label">Avg MTTR</div>
+        <div class="dash-stat-val">${data.avgMttr || '14.2m'}</div>
+        <div class="dash-stat-sub">Mean time to resolve</div>
+      </div>`;
+
+    // Render Service breakdown table
+    const list = data.byService || [];
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-faint);">No incidents recorded in database.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(item => `
+      <tr>
+        <td><strong style="color:var(--text);">${item.service}</strong></td>
+        <td style="font-weight:600;">${item.total_incidents}</td>
+        <td><span class="inc-status status-open">${item.open} open</span></td>
+        <td><span class="inc-status status-acknowledged">${item.in_progress} in progress</span></td>
+        <td><span class="inc-status status-resolved">${item.resolved} resolved</span></td>
+      </tr>
+    `).join('');
+
+  } catch (err) {
+    kpiBox.innerHTML = `<div style="grid-column:1/-1;color:var(--red);">Error: ${err.message}</div>`;
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+//  RENDER USER & ADMIN BADGES
+// ════════════════════════════════════════════════════════════════
+
+function renderUser(user) {
+  currentUserData = user;
+  const name    = user.name       || user.displayName || '—';
+  const email   = user.email      || '—';
+  const photo   = user.picture    || user.photoURL    || null;
+  const initial = user.initials   || name[0]          || '?';
+  const given   = user.given_name || name.split(' ')[0];
+
+  document.getElementById('dashGreeting').textContent  = `Welcome back, ${given} 👋`;
+  document.getElementById('dashSubtitle').textContent  = 'Here\'s what\'s happening across your services right now.';
+  document.getElementById('profileName').textContent   = name;
+  document.getElementById('profileEmail').textContent  = email;
+  document.getElementById('profileBanner').style.display = 'flex';
+  document.getElementById('newIncidentBtn').style.display = 'flex';
+
+  // Check admin status
+  const isAdmin = user.is_admin === 1 || user.role === 'admin' || email === 'admin@beacon.app' || user.id === 'admin_1';
+  
+  const roleBadge = document.getElementById('userRoleBadge');
+  if (roleBadge) {
+    roleBadge.innerHTML = isAdmin 
+      ? `<span class="admin-tag">👑 Admin [ID: ${user.id || 'admin_1'}]</span>`
+      : `<span class="member-tag">👤 Member [ID: ${user.id || 'usr'}]</span>`;
+  }
+
+  const adminHeader = document.getElementById('adminHeaderBadge');
+  if (adminHeader) {
+    adminHeader.innerHTML = isAdmin
+      ? `<span class="admin-tag" title="Admin rights active">👑 Admin Verified</span>`
+      : '';
+  }
+
+  const badgeEl = document.getElementById('profileBadge');
+  badgeEl.textContent = IS_CONFIGURED 
+    ? (isAdmin ? 'Admin (Google OAuth)' : 'Member (Google OAuth)') 
+    : (isAdmin ? '👑 Admin (SQLite Backend)' : 'Member (Local SQL Session)');
+
+  document.getElementById('profileAvatar').innerHTML = photo
+    ? `<img src="${photo}" alt="${name}" referrerpolicy="no-referrer"/>`
+    : `<span style="font-size:20px;font-weight:700;">${initial.toUpperCase()}</span>`;
+
+  const nav = document.getElementById('userAvatar');
+  nav.innerHTML = photo
+    ? `<img src="${photo}" alt="${name}" referrerpolicy="no-referrer"/>`
+    : `<span style="font-size:13px;font-weight:700;">${initial.toUpperCase()}</span>`;
+  document.getElementById('menuUserName').textContent  = name;
+  document.getElementById('menuUserEmail').textContent = email;
+
+  // Badge in nav
+  const badge = document.getElementById('backendBadge');
+  if (badge) badge.textContent = IS_CONFIGURED ? '● Firestore live' : '● SQLite SQL active';
+}
+
+function renderStats(incidents) {
+  const s = computeStats(incidents);
+  document.getElementById('statsRow').innerHTML = `
+    <div class="dash-stat-card">
+      <div class="dash-stat-label">Open incidents</div>
+      <div class="dash-stat-val c-${s.open > 0 ? 'red' : 'green'}">${s.open}</div>
+      <div class="dash-stat-sub">${s.open > 0 ? 'Needs attention' : 'All clear'}</div>
+    </div>
+    <div class="dash-stat-card">
+      <div class="dash-stat-label">Acknowledged</div>
+      <div class="dash-stat-val c-violet">${s.acknowledged}</div>
+      <div class="dash-stat-sub">In progress</div>
+    </div>
+    <div class="dash-stat-card">
+      <div class="dash-stat-label">Resolved</div>
+      <div class="dash-stat-val c-green">${s.resolved}</div>
+      <div class="dash-stat-sub">Closed out</div>
+    </div>
+    <div class="dash-stat-card">
+      <div class="dash-stat-label">Total incidents</div>
+      <div class="dash-stat-val">${s.total}</div>
+      <div class="dash-stat-sub">All time</div>
+    </div>`;
+}
+
+function renderIncidents(incidents) {
+  allIncidentsCache = incidents;
+  const open = incidents.filter(i => i.status !== 'resolved').length;
+  document.getElementById('sidebarBadge').textContent  = open;
+  document.getElementById('incidentCount').textContent = `${incidents.length} total`;
+
+  if (!incidents.length) {
+    document.getElementById('incidentList').innerHTML = `
+      <div class="empty-state">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p>No incidents yet. Click <strong>New incident</strong> to create one.</p>
+      </div>`;
+    return;
+  }
+
+  // Preview list on dashboard
+  document.getElementById('incidentList').innerHTML = incidents.slice(0, 5).map(inc => {
+    const isResolved = inc.status === 'resolved';
+    const btns = [];
+    if (inc.status === 'open')         btns.push(`<button class="inc-btn inc-btn-ack" onclick="handleStatus('${inc._id}','acknowledged',this)">Acknowledge</button>`);
+    if (inc.status !== 'resolved')     btns.push(`<button class="inc-btn inc-btn-res" onclick="handleStatus('${inc._id}','resolved',this)">Resolve</button>`);
+    if (isResolved)                    btns.push(`<button class="inc-btn inc-btn-del" onclick="handleDelete('${inc._id}',this)">Delete</button>`);
+    return `
+      <div class="incident-row ${isResolved ? 'resolved' : ''}" data-id="${inc._id}">
+        <div class="inc-sev sev-${inc.severity}"></div>
+        <div class="inc-info">
+          <div class="inc-title">${inc.service} · ${inc.title}</div>
+          <div class="inc-meta">${inc.owner} · ${timeAgo(inc.createdAt)}</div>
+        </div>
+        <span class="inc-status status-${inc.status}">${STATUS_LABEL[inc.status] || inc.status}</span>
+        <div class="inc-btns">${btns.join('')}</div>
+      </div>`;
+  }).join('');
+
+  // If currently on Incidents tab, refresh full table too
+  if (currentView === 'incidents') {
+    renderFullIncidentsTable();
+  }
+}
+
+const ONCALL_COLORS = {
+  violet: { bg:'rgba(124,156,255,.18)', fg:'var(--violet)' },
+  green:  { bg:'rgba(111,207,151,.18)', fg:'var(--green)' },
+  amber:  { bg:'rgba(240,163,69,.18)',  fg:'var(--amber)' },
+  red:    { bg:'rgba(229,105,122,.18)', fg:'var(--red)' },
+};
+
+function renderOncall(oncall) {
+  if (!oncall.length) {
+    document.getElementById('oncallList').innerHTML = `<div class="empty-state"><p>No on-call roster set.</p></div>`;
+    return;
+  }
+  document.getElementById('oncallList').innerHTML = oncall.map(o => {
+    const c = ONCALL_COLORS[o.color] || ONCALL_COLORS.violet;
+    return `
+      <div class="oncall-item">
+        <div class="oncall-avatar" style="background:${c.bg};color:${c.fg};">${o.initials}</div>
+        <div>
+          <div class="oncall-name">${o.name}</div>
+          <div class="oncall-role">${o.role}</div>
+        </div>
+        <div class="oncall-shift">${o.shift}</div>
+      </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ACTIONS (calls db.js SQL / Firebase functions)
+// ════════════════════════════════════════════════════════════════
+
+window.handleStatus = async function(id, status, btn) {
+  btn.disabled = true;
+  try {
+    const mode = getBackendMode();
+    if (mode === 'sql' || IS_CONFIGURED) {
+      await updateIncidentStatus(id, status);
+      if (mode === 'sql') {
+        listenIncidents(incidents => {
+          renderStats(incidents);
+          renderIncidents(incidents);
+        });
+      }
+    } else {
+      const row = document.querySelector(`[data-id="${id}"]`);
+      if (row) {
+        const badge = row.querySelector('.inc-status');
+        badge.className = `inc-status status-${status}`;
+        badge.textContent = STATUS_LABEL[status];
+      }
+    }
+    showToast(`Incident ${status === 'acknowledged' ? 'acknowledged' : 'resolved'} ✓`);
+  } catch (e) {
+    showToast('Failed to update incident', 'error');
+    btn.disabled = false;
+  }
+};
+
+window.handleDelete = async function(id, btn) {
+  if (!confirm('Delete this incident permanently from SQL database?')) return;
+  btn.disabled = true;
+  try {
+    const mode = getBackendMode();
+    if (mode === 'sql' || IS_CONFIGURED) {
+      await deleteIncident(id);
+      if (mode === 'sql') {
+        listenIncidents(incidents => {
+          renderStats(incidents);
+          renderIncidents(incidents);
+        });
+      }
+    } else {
+      document.querySelector(`[data-id="${id}"]`)?.remove();
+    }
+    showToast('Incident deleted from SQL database');
+  } catch (e) {
+    showToast('Failed to delete incident', 'error');
+    btn.disabled = false;
+  }
+};
+
+// ── New incident modal ─────────────────────────────────────────
+const modal       = document.getElementById('incidentModal');
+const closeBtn    = document.getElementById('incModalClose');
+const cancelBtn   = document.getElementById('incModalCancel');
+const submitBtn   = document.getElementById('incModalSubmit');
+const newIncBtn   = document.getElementById('newIncidentBtn');
+
+newIncBtn?.addEventListener('click', () => { modal.classList.add('open'); document.body.style.overflow='hidden'; });
+closeBtn?.addEventListener('click',  closeIncModal);
+cancelBtn?.addEventListener('click', closeIncModal);
+modal?.addEventListener('click', e => { if (e.target === modal) closeIncModal(); });
+
+function closeIncModal() { modal.classList.remove('open'); document.body.style.overflow=''; }
+
+submitBtn?.addEventListener('click', async () => {
+  const service  = document.getElementById('incService').value.trim();
+  const title    = document.getElementById('incTitle').value.trim();
+  const severity = document.getElementById('incSeverity').value;
+  const owner    = document.getElementById('incOwner').value.trim();
+
+  if (!service || !title) { showToast('Service and title are required', 'error'); return; }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating…';
+
+  try {
+    const mode = getBackendMode();
+    if (mode === 'sql' || IS_CONFIGURED) {
+      await createIncident({ service, title, severity, owner });
+      if (mode === 'sql') {
+        listenIncidents(incidents => {
+          renderStats(incidents);
+          renderIncidents(incidents);
+        });
+      }
+    } else {
+      const list = document.getElementById('incidentList');
+      const row = document.createElement('div');
+      const id  = 'demo-' + Date.now();
+      row.className = 'incident-row';
+      row.dataset.id = id;
+      row.innerHTML = `
+        <div class="inc-sev sev-${severity}"></div>
+        <div class="inc-info">
+          <div class="inc-title">${service} · ${title}</div>
+          <div class="inc-meta">${owner || '@me'} · just now</div>
+        </div>
+        <span class="inc-status status-open">Open</span>
+        <div class="inc-btns">
+          <button class="inc-btn inc-btn-ack" onclick="handleStatus('${id}','acknowledged',this)">Acknowledge</button>
+          <button class="inc-btn inc-btn-res" onclick="handleStatus('${id}','resolved',this)">Resolve</button>
+        </div>`;
+      list?.insertAdjacentElement('afterbegin', row);
+    }
+    showToast(`Incident created in SQL database — ${service}`);
+    closeIncModal();
+    document.getElementById('incService').value = '';
+    document.getElementById('incTitle').value   = '';
+    document.getElementById('incOwner').value   = '';
+  } catch(e) {
+    showToast('Failed to create incident', 'error');
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Create Incident`;
+});
+
+// ════════════════════════════════════════════════════════════════
+//  AVATAR DROPDOWN + LOGOUT
+// ════════════════════════════════════════════════════════════════
+const av = document.getElementById('userAvatar');
+const um = document.getElementById('userMenu');
+av?.addEventListener('click', e => { e.stopPropagation(); um?.classList.toggle('visible'); });
+document.addEventListener('click', () => um?.classList.remove('visible'));
+um?.addEventListener('click', e => e.stopPropagation());
+
+document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  
+  // 1. Immediately clear client session tokens
+  localStorage.removeItem('beacon_user');
+  sessionStorage.clear();
+
+  // 2. Sign out Firebase if active
+  if (typeof IS_CONFIGURED !== 'undefined' && IS_CONFIGURED && typeof firebase !== 'undefined' && firebase.apps.length) {
+    try { await firebase.auth().signOut(); } catch (_) {}
+  }
+
+  // 3. Inform backend via asynchronous fetch (avoid direct navigation 404s on static servers)
+  try {
+    await fetch('/auth/logout', { method: 'GET', credentials: 'include' });
+  } catch (_) {}
+
+  // 4. Return directly to sign-in page with confirmation and open modal
+  window.location.href = 'index.html?logged_out=true&signin=true';
+});
+
+// ════════════════════════════════════════════════════════════════
+//  BOOTSTRAP  — SQL Backend / Firebase / Demo
+// ════════════════════════════════════════════════════════════════
+async function bootstrap() {
+  const mode = await detectBackend();
+  const badge = document.getElementById('backendBadge');
+
+  if (mode === 'sql') {
+    if (badge) {
+      badge.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6FCF97;margin-right:6px;vertical-align:middle;box-shadow:0 0 6px rgba(111,207,151,0.6);"></span>SQLite SQL active';
+      badge.style.background = 'rgba(111,207,151,.12)';
+      badge.style.borderColor = 'rgba(111,207,151,.3)';
+      badge.style.color = 'var(--green)';
+      badge.title = 'Connected to SQLite database (beacon.db)';
+    }
+
+    // Try to get authenticated user from server session
+    let currentUser = null;
+    try {
+      const res = await fetch('/api/me');
+      if (res.ok) currentUser = await res.json();
+    } catch (_) {}
+
+    if (!currentUser) {
+      try {
+        const stored = localStorage.getItem('beacon_user');
+        if (stored) currentUser = JSON.parse(stored);
+      } catch (_) {}
+    }
+
+    // Auth Guard: if not authenticated, kick to index.html with auth_required
+    if (!currentUser || !currentUser.id) {
+      window.location.replace('index.html?auth_required=true');
+      return;
+    }
+    renderUser(currentUser);
+
+    // Real-time SQL query listeners
+    listenIncidents(incidents => {
+      renderStats(incidents);
+      renderIncidents(incidents);
+    });
+
+    listenOncall(oncall => renderOncall(oncall));
+
+  } else if (mode === 'firebase') {
+    if (badge) badge.textContent = '● Firestore live';
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+
+    firebase.auth().onAuthStateChanged(async firebaseUser => {
+      if (!firebaseUser) { window.location.replace('index.html'); return; }
+
+      await saveUserProfile(firebaseUser);
+      await seedDatabaseIfEmpty();
+
+      renderUser({
+        name:       firebaseUser.displayName,
+        email:      firebaseUser.email,
+        picture:    firebaseUser.photoURL,
+        given_name: firebaseUser.displayName?.split(' ')[0],
+        initials:   firebaseUser.displayName?.[0] || '?',
+      });
+
+      listenIncidents(incidents => {
+        renderStats(incidents);
+        renderIncidents(incidents);
+      });
+
+      listenOncall(oncall => renderOncall(oncall));
+    });
+
+  } else {
+    if (badge) badge.textContent = '● Demo mode';
+    let demoUser;
+    try { demoUser = JSON.parse(localStorage.getItem('beacon_user')); } catch {}
+    if (!demoUser) { window.location.replace('index.html?auth_required=true'); return; }
+    else {
+      renderUser(demoUser);
+
+      const inc = typeof BEACON_DATA !== 'undefined' ? BEACON_DATA.incidents : [];
+      const oc  = typeof BEACON_DATA !== 'undefined' ? BEACON_DATA.oncall    : [];
+      renderStats(inc.map(i => ({ ...i, _id: 'demo-'+Math.random() })));
+      renderIncidents(inc.map((i,n) => ({ ...i, _id: 'demo-'+n })));
+      renderOncall(oc);
+    }
+  }
+}
+
+bootstrap();
+</script>
+<script src="data.js"></script>
+</body>
+</html>

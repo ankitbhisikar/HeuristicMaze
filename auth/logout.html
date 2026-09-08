@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=../index.html?logged_out=true&signin=true">
+  <title>Logging out...</title>
+  <script>
+    localStorage.removeItem('beacon_user');
+    sessionStorage.clear();
+    window.location.replace('../index.html?logged_out=true&signin=true');
+  </script>
+</head>
+<body style="background:#0c0e12;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <p>Logging out...</p>
+</body>
+</html>
