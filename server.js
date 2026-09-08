@@ -393,12 +393,16 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start server ──────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n==================================================`);
-  console.log(`🚀 Beacon SQL Backend Server is running!`);
-  console.log(`   URL:          http://localhost:${PORT}`);
-  console.log(`   Database:     beacon.db (SQLite SQL)`);
-  console.log(`   SQL Schema:   schema.sql`);
-  console.log(`   API Endpoint: http://localhost:${PORT}/api/incidents`);
-  console.log(`==================================================\n`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n==================================================`);
+    console.log(`🚀 Beacon SQL Backend Server is running!`);
+    console.log(`   URL:          http://localhost:${PORT}`);
+    console.log(`   Database:     beacon.db (SQLite SQL)`);
+    console.log(`   SQL Schema:   schema.sql`);
+    console.log(`   API Endpoint: http://localhost:${PORT}/api/incidents`);
+    console.log(`==================================================\n`);
+  });
+}
+
+module.exports = app;

@@ -1,0 +1,24 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment secrets
+.env
+.env.local
+
+# Large local executables (DO NOT commit to GitHub)
+node.exe
+deno.exe
+*.exe
+
+# Local SQLite database
+beacon.db
+beacon.db-journal
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
