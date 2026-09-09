@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # A* Algorithm & City Route Pathfinder Platform
 
 An interactive algorithm visualization and geographic pathfinding suite built for **Design and Analysis of Algorithms (DAA)**. Backed by an embedded SQLite database and a high-performance REST API.
@@ -79,3 +80,6 @@ An interactive algorithm visualization and geographic pathfinding suite built fo
    - **Documentation**: [http://localhost:3000/docs.html](http://localhost:3000/docs.html)
    - **Pricing**: [http://localhost:3000/pricing.html](http://localhost:3000/pricing.html)
    - **Dashboard**: [http://localhost:3000/dashboard.html](http://localhost:3000/dashboard.html)
+=======
+# A*-Algorithm
+>>>>>>> e632752286d8f56d138192404318471fc49c8ec3
