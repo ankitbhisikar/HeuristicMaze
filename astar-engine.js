@@ -681,7 +681,7 @@
       toggle: toggleSound,
       cycleDensity,
       getDensity: () => soundDensity,
-      isEnabled: isSoundEnabled,
+      isEnabled: () => soundEnabled,
       playWallClick,
       playNodeMove,
       playExplorePing,
@@ -1014,7 +1014,7 @@
           const cell = document.getElementById(`cell-${r}-${c}`);
           if (cell) cell.classList.add('node-visited');
         }
-        SoundEngine.playExplorePing(index, exploredOrder.length);
+        SoundEngine.playExplorePing(index, exploredOrder.length, c);
       }, index * delay);
       state.animationTimeouts.push(t);
     });
@@ -1348,6 +1348,14 @@
       });
     }
 
+    // Sound Density cycle button
+    const densityBtns = document.querySelectorAll('#btnSoundDensity');
+    densityBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        SoundEngine.cycleDensity();
+      });
+    });
+
     // Comparison button
     const compareBtn = document.getElementById('btnCompareHeuristics');
     if (compareBtn) compareBtn.addEventListener('click', () => {
@@ -1563,7 +1571,9 @@
       console.error(e);
     }
   }
-  window.resolveHazard = resolveHazard;
+  if (typeof window !== 'undefined') {
+    window.resolveHazard = resolveHazard;
+  }
 
   async function refreshAccidentStats() {
     try {
@@ -2092,17 +2102,22 @@
   }
 
   // Expose global init functions for dynamic view rendering
-  window.initMazeEngine = init;
-  window.initMapPathfinder = initMapPathfinder;
-  window.renderMapCanvas = renderMapCanvas;
+  if (typeof window !== 'undefined') {
+    window.initMazeEngine = init;
+    window.initMapPathfinder = initMapPathfinder;
+    window.renderMapCanvas = renderMapCanvas;
+    window.SoundEngine = SoundEngine;
 
-  // ════════════════════════════════════════════════════════════════
-  //  BOOTSTRAP ON DOM READY
-  // ════════════════════════════════════════════════════════════════
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+    // ════════════════════════════════════════════════════════════════
+    //  BOOTSTRAP ON DOM READY
+    // ════════════════════════════════════════════════════════════════
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    }
   }
 
 })();
