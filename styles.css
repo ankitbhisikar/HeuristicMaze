@@ -911,6 +911,30 @@ footer .wrap {
   background: rgba(229, 105, 122, 0.1);
 }
 
+.sound-density-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--panel-2);
+  border: 1px solid rgba(240, 163, 69, 0.45);
+  color: var(--amber);
+  font-family: inherit;
+  user-select: none;
+}
+
+.sound-density-btn:hover {
+  background: rgba(240, 163, 69, 0.15);
+  border-color: var(--amber);
+  transform: translateY(-1px);
+}
+
+
 .maze-grid-wrapper {
   background: var(--panel);
   border: 1px solid var(--border);

@@ -36,13 +36,18 @@
     let audioCtx = null;
     let masterGain = null;
     let soundEnabled = true;
+    let soundDensity = 'ultra'; // 'normal' | 'high' | 'ultra'
     let lastWallSoundTime = 0;
     let lastExploreSoundTime = 0;
+    let delayNode = null;
+    let delayGain = null;
 
-    // Check stored preference
+    // Check stored preferences
     try {
       const stored = localStorage.getItem('beacon_maze_sound');
       if (stored !== null) soundEnabled = stored === 'true';
+      const storedDensity = localStorage.getItem('beacon_sound_density');
+      if (storedDensity) soundDensity = storedDensity;
     } catch (_) {}
 
     function getAudioContext() {
@@ -51,17 +56,34 @@
         if (!AudioContextClass) return null;
         audioCtx = new AudioContextClass();
         masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(0.28, audioCtx.currentTime);
+        
+        // Master presence elevated for dense, rich acoustic power
+        const baseVol = soundDensity === 'ultra' ? 0.48 : (soundDensity === 'high' ? 0.38 : 0.28);
+        masterGain.gain.setValueAtTime(baseVol, audioCtx.currentTime);
 
-        // Soft dynamics compressor to prevent harshness/clipping
+        // Dynamics compressor to glue the dense polyphonic layers
         const compressor = audioCtx.createDynamicsCompressor();
-        compressor.threshold.setValueAtTime(-16, audioCtx.currentTime);
-        compressor.knee.setValueAtTime(12, audioCtx.currentTime);
-        compressor.ratio.setValueAtTime(5, audioCtx.currentTime);
-        compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
-        compressor.release.setValueAtTime(0.12, audioCtx.currentTime);
+        compressor.threshold.setValueAtTime(-14, audioCtx.currentTime);
+        compressor.knee.setValueAtTime(10, audioCtx.currentTime);
+        compressor.ratio.setValueAtTime(4.5, audioCtx.currentTime);
+        compressor.attack.setValueAtTime(0.002, audioCtx.currentTime);
+        compressor.release.setValueAtTime(0.09, audioCtx.currentTime);
 
-        masterGain.connect(compressor);
+        // Acoustic spatial micro-delay line for sonic density and depth
+        try {
+          delayNode = audioCtx.createDelay();
+          delayNode.delayTime.setValueAtTime(0.055, audioCtx.currentTime); // 55ms acoustic resonance
+          delayGain = audioCtx.createGain();
+          delayGain.gain.setValueAtTime(0.20, audioCtx.currentTime);
+
+          masterGain.connect(compressor);
+          masterGain.connect(delayNode);
+          delayNode.connect(delayGain);
+          delayGain.connect(compressor);
+        } catch (_) {
+          masterGain.connect(compressor);
+        }
+
         compressor.connect(audioCtx.destination);
       }
 
@@ -69,6 +91,17 @@
         audioCtx.resume().catch(() => {});
       }
       return audioCtx;
+    }
+
+    function createPanner(ctx, panVal) {
+      if (ctx.createStereoPanner && typeof panVal === 'number' && !isNaN(panVal)) {
+        try {
+          const panner = ctx.createStereoPanner();
+          panner.pan.setValueAtTime(Math.max(-0.85, Math.min(0.85, panVal)), ctx.currentTime);
+          return panner;
+        } catch (_) {}
+      }
+      return null;
     }
 
     function toggleSound() {
@@ -84,8 +117,26 @@
       return soundEnabled;
     }
 
-    function isSoundEnabled() {
-      return soundEnabled;
+    function cycleDensity() {
+      if (soundDensity === 'ultra') soundDensity = 'normal';
+      else if (soundDensity === 'normal') soundDensity = 'high';
+      else soundDensity = 'ultra';
+
+      try {
+        localStorage.setItem('beacon_sound_density', soundDensity);
+      } catch (_) {}
+
+      if (masterGain && audioCtx) {
+        const baseVol = soundDensity === 'ultra' ? 0.48 : (soundDensity === 'high' ? 0.38 : 0.28);
+        masterGain.gain.setValueAtTime(baseVol, audioCtx.currentTime);
+      }
+
+      updateSoundUI();
+      if (soundEnabled) {
+        getAudioContext();
+        playDensityChime();
+      }
+      return soundDensity;
     }
 
     function updateSoundUI() {
@@ -98,43 +149,112 @@
         btn.classList.toggle('active', soundEnabled);
         btn.classList.toggle('muted', !soundEnabled);
       }
+
+      const densityLabels = document.querySelectorAll('#soundDensityLabel');
+      const densityBtns = document.querySelectorAll('#btnSoundDensity');
+      const modeText = soundDensity === 'ultra' ? 'ULTRA (Rich)' :
+                       soundDensity === 'high' ? 'HIGH (Polyphonic)' : 'NORMAL';
+
+      densityLabels.forEach(el => {
+        el.textContent = `🎛️ Sound Density: ${modeText}`;
+      });
+      densityBtns.forEach(el => {
+        el.style.borderColor = soundDensity === 'ultra' ? 'var(--amber)' :
+                               soundDensity === 'high' ? 'var(--violet)' : 'var(--border)';
+        el.style.color = soundDensity === 'ultra' ? 'var(--amber)' :
+                         soundDensity === 'high' ? 'var(--violet)' : 'var(--text-dim)';
+      });
     }
 
-    // 1. Wall Draw / Erase Click (crisp pop)
+    // Density Preview Chime (plays when cycling density)
+    function playDensityChime() {
+      const ctx = getAudioContext();
+      if (!ctx || !soundEnabled) return;
+      const t = ctx.currentTime;
+      const chords = soundDensity === 'ultra' ? [523.25, 659.25, 783.99, 1046.5, 1318.51] :
+                     soundDensity === 'high' ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 783.99];
+
+      chords.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = soundDensity === 'ultra' ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, t + idx * 0.04);
+        gain.gain.setValueAtTime(0.24 / Math.sqrt(chords.length), t + idx * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.04 + 0.38);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(t + idx * 0.04);
+        osc.stop(t + idx * 0.04 + 0.40);
+      });
+    }
+
+    // 1. Wall Draw / Erase Click (crisp haptic mechanical pop)
     function playWallClick(isAdd) {
       if (!soundEnabled) return;
       const now = performance.now();
-      if (now - lastWallSoundTime < 32) return; // rate-limit zipper sound
+      const minInterval = soundDensity === 'ultra' ? 14 : (soundDensity === 'high' ? 22 : 32);
+      if (now - lastWallSoundTime < minInterval) return;
       lastWallSoundTime = now;
 
       const ctx = getAudioContext();
       if (!ctx) return;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       const t = ctx.currentTime;
 
       if (isAdd) {
-        // Percussive wooden/stone tap (280Hz -> 130Hz)
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(280, t);
-        osc.frequency.exponentialRampToValueAtTime(130, t + 0.04);
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        // Voice 1: Crisp attack transient click
+        const clickOsc = ctx.createOscillator();
+        const clickGain = ctx.createGain();
+        clickOsc.type = 'triangle';
+        clickOsc.frequency.setValueAtTime(880, t);
+        clickOsc.frequency.exponentialRampToValueAtTime(320, t + 0.02);
+        clickGain.gain.setValueAtTime(0.18, t);
+        clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+        clickOsc.connect(clickGain);
+        clickGain.connect(masterGain);
+        clickOsc.start(t);
+        clickOsc.stop(t + 0.03);
+
+        // Voice 2: Resonant block body (280Hz -> 130Hz)
+        const bodyOsc = ctx.createOscillator();
+        const bodyGain = ctx.createGain();
+        bodyOsc.type = 'sine';
+        bodyOsc.frequency.setValueAtTime(280, t);
+        bodyOsc.frequency.exponentialRampToValueAtTime(130, t + 0.045);
+        bodyGain.gain.setValueAtTime(0.24, t);
+        bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        bodyOsc.connect(bodyGain);
+        bodyGain.connect(masterGain);
+        bodyOsc.start(t);
+        bodyOsc.stop(t + 0.055);
+
+        if (soundDensity === 'ultra') {
+          // Voice 3: Sub-tap weight (90Hz thump)
+          const subOsc = ctx.createOscillator();
+          const subGain = ctx.createGain();
+          subOsc.type = 'sine';
+          subOsc.frequency.setValueAtTime(90, t);
+          subOsc.frequency.exponentialRampToValueAtTime(50, t + 0.04);
+          subGain.gain.setValueAtTime(0.15, t);
+          subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          subOsc.connect(subGain);
+          subGain.connect(masterGain);
+          subOsc.start(t);
+          subOsc.stop(t + 0.045);
+        }
       } else {
-        // Eraser pop (440Hz -> 220Hz)
+        // Eraser pop with harmonic shimmer
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, t);
-        osc.frequency.exponentialRampToValueAtTime(220, t + 0.035);
-        gain.gain.setValueAtTime(0.13, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+        osc.frequency.setValueAtTime(520, t);
+        osc.frequency.exponentialRampToValueAtTime(220, t + 0.04);
+        gain.gain.setValueAtTime(0.20, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(t);
+        osc.stop(t + 0.045);
       }
-
-      osc.connect(gain);
-      gain.connect(masterGain);
-
-      osc.start(t);
-      osc.stop(t + 0.045);
     }
 
     // 2. Moving Start (S) or Goal (G)
@@ -142,315 +262,425 @@
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       const t = ctx.currentTime;
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, t); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, t + 0.06); // A5
-      gain.gain.setValueAtTime(0.16, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      // Dual harmonic magnetic glide (D5 + A5 unison)
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-      osc.connect(gain);
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, t);
+      osc1.frequency.exponentialRampToValueAtTime(880, t + 0.07);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(1174.66, t);
+      osc2.frequency.exponentialRampToValueAtTime(1760, t + 0.07);
+
+      gain.gain.setValueAtTime(0.24, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
       gain.connect(masterGain);
 
-      osc.start(t);
-      osc.stop(t + 0.08);
+      osc1.start(t);
+      osc2.start(t);
+      osc1.stop(t + 0.09);
+      osc2.stop(t + 0.09);
     }
 
-    // 3. Radar/Sonar Ping during Search Exploration
-    function playExplorePing(index, total) {
+    // 3. Dense Sonar / Wavefront Exploration Ping
+    function playExplorePing(index, total, col = 12) {
       if (!soundEnabled) return;
       const now = performance.now();
-      if (now - lastExploreSoundTime < 35) return; // pleasant sonar rhythm
+      const minInterval = soundDensity === 'ultra' ? 8 : (soundDensity === 'high' ? 16 : 32);
+      if (now - lastExploreSoundTime < minInterval) return;
       lastExploreSoundTime = now;
 
       const ctx = getAudioContext();
       if (!ctx) return;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       const t = ctx.currentTime;
 
-      // Frequency rises gently as exploration progresses from 320Hz to 740Hz
       const progress = total > 1 ? Math.min(1, index / total) : 0.5;
-      const baseFreq = 320 + progress * 420;
+      const baseFreq = 300 + progress * 480;
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(baseFreq, t);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.9, t + 0.03);
+      // Spatial stereo panning based on column
+      const panVal = ((col || 12) / 26) * 1.5 - 0.75;
+      const panner = createPanner(ctx, panVal);
 
-      gain.gain.setValueAtTime(0.08, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+      // Voice 1: Pure fundamental sonar tone
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(baseFreq, t);
+      osc1.frequency.exponentialRampToValueAtTime(baseFreq * 0.94, t + 0.035);
 
-      osc.connect(gain);
-      gain.connect(masterGain);
+      const amp = soundDensity === 'ultra' ? 0.18 : (soundDensity === 'high' ? 0.14 : 0.09);
+      gain1.gain.setValueAtTime(amp, t);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
 
-      osc.start(t);
-      osc.stop(t + 0.035);
+      if (panner) {
+        osc1.connect(gain1);
+        gain1.connect(panner);
+        panner.connect(masterGain);
+      } else {
+        osc1.connect(gain1);
+        gain1.connect(masterGain);
+      }
+      osc1.start(t);
+      osc1.stop(t + 0.04);
+
+      // Voice 2 (High / Ultra): Harmonic overtone (+fifth/octave detuned shimmer)
+      if (soundDensity !== 'normal') {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'triangle';
+        const overtoneFreq = baseFreq * 1.5 + 2.5; // gentle chorus beating
+        osc2.frequency.setValueAtTime(overtoneFreq, t);
+        gain2.gain.setValueAtTime(amp * 0.55, t);
+        gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+
+        if (panner) {
+          osc2.connect(gain2);
+          gain2.connect(panner);
+        } else {
+          osc2.connect(gain2);
+          gain2.connect(masterGain);
+        }
+        osc2.start(t);
+        osc2.stop(t + 0.035);
+      }
+
+      // Voice 3 (Ultra only): Micro-particle tick
+      if (soundDensity === 'ultra' && index % 2 === 0) {
+        const osc3 = ctx.createOscillator();
+        const gain3 = ctx.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(baseFreq * 2.5, t);
+        gain3.gain.setValueAtTime(amp * 0.35, t);
+        gain3.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+        osc3.connect(gain3);
+        gain3.connect(masterGain);
+        osc3.start(t);
+        osc3.stop(t + 0.025);
+      }
     }
 
-    // 4. Melodic Path Trace (when shortest path lights up)
-    const PENTATONIC = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66]; // C5 to D6
+    // 4. Dense Polyphonic Melodic Path Trace
+    const PENTATONIC = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51];
     function playPathTrace(index, total) {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
-
-      const noteIdx = index % PENTATONIC.length;
-      const freq = PENTATONIC[noteIdx];
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       const t = ctx.currentTime;
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, t);
+      const noteIdx = index % PENTATONIC.length;
+      const rootFreq = PENTATONIC[noteIdx];
 
-      gain.gain.setValueAtTime(0.14, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      // Voice 1: Root crystal tone
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(rootFreq, t);
+      gain1.gain.setValueAtTime(0.22, t);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc1.connect(gain1);
+      gain1.connect(masterGain);
+      osc1.start(t);
+      osc1.stop(t + 0.15);
 
-      osc.connect(gain);
-      gain.connect(masterGain);
+      // Voice 2: Harmonic Fifth overtone
+      if (soundDensity !== 'normal') {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(rootFreq * 1.5, t);
+        gain2.gain.setValueAtTime(0.14, t);
+        gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc2.connect(gain2);
+        gain2.connect(masterGain);
+        osc2.start(t);
+        osc2.stop(t + 0.13);
+      }
 
-      osc.start(t);
-      osc.stop(t + 0.09);
+      // Voice 3: Warm sub-octave body (in Ultra mode)
+      if (soundDensity === 'ultra') {
+        const osc3 = ctx.createOscillator();
+        const gain3 = ctx.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(rootFreq * 0.5, t);
+        gain3.gain.setValueAtTime(0.18, t);
+        gain3.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+        osc3.connect(gain3);
+        gain3.connect(masterGain);
+        osc3.start(t);
+        osc3.stop(t + 0.17);
+      }
     }
 
-    // 5. Character Step Sound (Robot 🤖 walking)
+    // 5. Heavy Dense Robotic Mechanical Steps
     function playCharacterStep(stepIndex) {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       const t = ctx.currentTime;
 
-      // Alternating footsteps: step 1 is 440Hz, step 2 is 493.88Hz
       const isEven = stepIndex % 2 === 0;
-      const freq = isEven ? 440 : 493.88;
+      const servoFreq = isEven ? 440 : 523.25;
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, t);
-      osc.frequency.exponentialRampToValueAtTime(freq * 0.72, t + 0.07);
+      // Layer 1: High-tech servo glide
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(servoFreq, t);
+      osc1.frequency.exponentialRampToValueAtTime(servoFreq * 0.75, t + 0.08);
+      gain1.gain.setValueAtTime(0.24, t);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.085);
+      osc1.connect(gain1);
+      gain1.connect(masterGain);
+      osc1.start(t);
+      osc1.stop(t + 0.09);
 
-      gain.gain.setValueAtTime(0.2, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.075);
+      // Layer 2: Tactile foot strike click transient
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(780, t);
+      osc2.frequency.exponentialRampToValueAtTime(240, t + 0.03);
+      gain2.gain.setValueAtTime(0.20, t);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+      osc2.connect(gain2);
+      gain2.connect(masterGain);
+      osc2.start(t);
+      osc2.stop(t + 0.04);
 
-      osc.connect(gain);
-      gain.connect(masterGain);
-
-      osc.start(t);
-      osc.stop(t + 0.08);
+      // Layer 3: Low-frequency sub thud (weight & bass body)
+      if (soundDensity !== 'normal') {
+        const subOsc = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(75, t);
+        subOsc.frequency.exponentialRampToValueAtTime(45, t + 0.06);
+        subGain.gain.setValueAtTime(0.26, t);
+        subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.065);
+        subOsc.connect(subGain);
+        subGain.connect(masterGain);
+        subOsc.start(t);
+        subOsc.stop(t + 0.07);
+      }
     }
 
-    // 6. Triumphant Goal Fanfare (C5 -> E5 -> G5 -> C6 Major Arpeggio + shimmer)
+    // 6. Triumphant Polyphonic Victory Fanfare (Full 6-Voice Brass/Synth Chord)
     function playGoalCelebration() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
+      const t = ctx.currentTime;
 
+      // 6-Voice rich ascending major arpeggio + sustained chord wash
       const notes = [
-        { f: 523.25, time: 0.00, dur: 0.12 },  // C5
-        { f: 659.25, time: 0.09, dur: 0.12 },  // E5
-        { f: 783.99, time: 0.18, dur: 0.15 },  // G5
-        { f: 1046.50, time: 0.28, dur: 0.45 }  // C6 (held)
+        { f: 261.63, time: 0.00, dur: 0.70, type: 'triangle' }, // C4 Sub Root
+        { f: 392.00, time: 0.07, dur: 0.65, type: 'triangle' }, // G4 Fifth
+        { f: 523.25, time: 0.14, dur: 0.60, type: 'triangle' }, // C5 Octave
+        { f: 659.25, time: 0.21, dur: 0.55, type: 'sine' },     // E5 Major Third
+        { f: 783.99, time: 0.28, dur: 0.55, type: 'triangle' }, // G5 Fifth
+        { f: 1046.50, time: 0.36, dur: 0.75, type: 'triangle' } // C6 Fanfare Peak
       ];
 
-      notes.forEach(({ f, time, dur }) => {
+      notes.forEach(({ f, time, dur, type }) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        const t = ctx.currentTime + time;
+        const noteTime = t + time;
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(f, t);
+        osc.type = type;
+        osc.frequency.setValueAtTime(f, noteTime);
 
-        gain.gain.setValueAtTime(0.24, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        gain.gain.setValueAtTime(0.30, noteTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + dur);
 
         osc.connect(gain);
         gain.connect(masterGain);
 
-        osc.start(t);
-        osc.stop(t + dur + 0.02);
+        osc.start(noteTime);
+        osc.stop(noteTime + dur + 0.02);
       });
 
-      // Shimmering chime harmonic
-      const sparkle = ctx.createOscillator();
-      const sGain = ctx.createGain();
-      const st = ctx.currentTime + 0.32;
-      sparkle.type = 'sine';
-      sparkle.frequency.setValueAtTime(2093, st); // C7
-      sGain.gain.setValueAtTime(0.09, st);
-      sGain.gain.exponentialRampToValueAtTime(0.001, st + 0.3);
-      sparkle.connect(sGain);
-      sGain.connect(masterGain);
-      sparkle.start(st);
-      sparkle.stop(st + 0.32);
+      // Shimmering crystalline cascades
+      [2093, 2637, 3135.96].forEach((f, idx) => {
+        const sparkle = ctx.createOscillator();
+        const sGain = ctx.createGain();
+        const st = t + 0.42 + idx * 0.08;
+        sparkle.type = 'sine';
+        sparkle.frequency.setValueAtTime(f, st);
+        sGain.gain.setValueAtTime(0.14, st);
+        sGain.gain.exponentialRampToValueAtTime(0.001, st + 0.3);
+        sparkle.connect(sGain);
+        sGain.connect(masterGain);
+        sparkle.start(st);
+        sparkle.stop(st + 0.32);
+      });
     }
 
-    // 7. No Path / Blocked Alarm (descending low minor buzzer)
+    // 7. Dense Blocked Alarm (Fat detuned saw buzz)
     function playBlockedAlarm() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
 
       [0, 0.13].forEach((offset) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
         const t = ctx.currentTime + offset;
-
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(170, t);
-        osc.frequency.exponentialRampToValueAtTime(110, t + 0.09);
-
-        gain.gain.setValueAtTime(0.16, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
-
-        osc.connect(gain);
-        gain.connect(masterGain);
-
-        osc.start(t);
-        osc.stop(t + 0.1);
+        // Dual detuned saw for fat analog alarm buzz
+        [170, 174].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, t);
+          osc.frequency.exponentialRampToValueAtTime(110, t + 0.11);
+          gain.gain.setValueAtTime(0.24, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(t);
+          osc.stop(t + 0.12);
+        });
       });
     }
 
-    // 8. Button / UI Click (crisp mechanical tick)
+    // 8. Crisp Mechanical Button Tick
     function playButtonTick() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
+      const t = ctx.currentTime;
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      const t = ctx.currentTime;
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(950, t);
-      osc.frequency.exponentialRampToValueAtTime(450, t + 0.02);
-
-      gain.gain.setValueAtTime(0.11, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
-
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1050, t);
+      osc.frequency.exponentialRampToValueAtTime(420, t + 0.025);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
       osc.connect(gain);
       gain.connect(masterGain);
-
       osc.start(t);
-      osc.stop(t + 0.03);
+      osc.stop(t + 0.035);
     }
 
-    // 9. Shuffle / Whoosh (for Random Maze & Sample Maze)
+    // 9. Resonant Air Whoosh
     function playWhoosh() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
+      const t = ctx.currentTime;
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      const t = ctx.currentTime;
-
       osc.type = 'sine';
       osc.frequency.setValueAtTime(220, t);
-      osc.frequency.exponentialRampToValueAtTime(680, t + 0.08);
-      osc.frequency.exponentialRampToValueAtTime(320, t + 0.16);
-
-      gain.gain.setValueAtTime(0.13, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-
+      osc.frequency.exponentialRampToValueAtTime(740, t + 0.09);
+      osc.frequency.exponentialRampToValueAtTime(310, t + 0.18);
+      gain.gain.setValueAtTime(0.20, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.20);
       osc.connect(gain);
       gain.connect(masterGain);
-
       osc.start(t);
-      osc.stop(t + 0.2);
+      osc.stop(t + 0.22);
     }
 
-    // 10. Clear Sweep (for Clear Walls / Reset)
+    // 10. Harmonic Clear Sweep
     function playClearSweep() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
       const t = ctx.currentTime;
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(540, t);
-      osc.frequency.exponentialRampToValueAtTime(140, t + 0.13);
-
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-
-      osc.connect(gain);
-      gain.connect(masterGain);
-
-      osc.start(t);
-      osc.stop(t + 0.15);
+      [540, 810].forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, t);
+        osc.frequency.exponentialRampToValueAtTime(140, t + 0.14);
+        gain.gain.setValueAtTime(0.18 / (i + 1), t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(t);
+        osc.stop(t + 0.16);
+      });
     }
 
-    // 11. Accident / Collision Alarm (two-tone urgent siren pulse)
+    // 11. Multi-Tone Urgent Emergency Siren Pulse
     function playCollisionAlarm() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
 
-      [0, 0.14, 0.28].forEach((offset, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+      [0, 0.13, 0.26].forEach((offset, idx) => {
         const t = ctx.currentTime + offset;
+        const baseFreq = idx % 2 === 0 ? 880 : 660;
 
-        osc.type = 'sawtooth';
-        const freq = idx % 2 === 0 ? 880 : 660;
-        osc.frequency.setValueAtTime(freq, t);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.85, t + 0.11);
-
-        gain.gain.setValueAtTime(0.20, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-
-        osc.connect(gain);
-        gain.connect(masterGain);
-
-        osc.start(t);
-        osc.stop(t + 0.13);
+        // Dual detuned unison sirens
+        [baseFreq, baseFreq + 4].forEach(f => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t);
+          osc.frequency.exponentialRampToValueAtTime(f * 0.82, t + 0.11);
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(t);
+          osc.stop(t + 0.13);
+        });
       });
     }
 
-    // 12. Hazards Cleared Fanfare / Harmonic Sweep
+    // 12. Full Harmonic Major Chord Resolution Sweep
     function playHazardCleared() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
+      const t = ctx.currentTime;
 
       const notes = [
-        { f: 523.25, time: 0.00, dur: 0.10 }, // C5
-        { f: 659.25, time: 0.08, dur: 0.10 }, // E5
-        { f: 783.99, time: 0.16, dur: 0.20 }  // G5
+        { f: 523.25, time: 0.00, dur: 0.15 }, // C5
+        { f: 659.25, time: 0.08, dur: 0.15 }, // E5
+        { f: 783.99, time: 0.16, dur: 0.28 }  // G5
       ];
 
       notes.forEach(({ f, time, dur }) => {
-        const osc = ctx.createOscillator();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
         const gain = ctx.createGain();
-        const t = ctx.currentTime + time;
+        const noteT = t + time;
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, t);
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(f, noteT);
 
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(f * 2, noteT);
 
-        osc.connect(gain);
+        gain.gain.setValueAtTime(0.24, noteT);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteT + dur);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
         gain.connect(masterGain);
 
-        osc.start(t);
-        osc.stop(t + dur + 0.02);
+        osc1.start(noteT);
+        osc2.start(noteT);
+        osc1.stop(noteT + dur + 0.02);
+        osc2.stop(noteT + dur + 0.02);
       });
     }
 
     return {
       init: updateSoundUI,
       toggle: toggleSound,
+      cycleDensity,
+      getDensity: () => soundDensity,
       isEnabled: isSoundEnabled,
       playWallClick,
       playNodeMove,
