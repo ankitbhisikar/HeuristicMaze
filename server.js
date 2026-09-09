@@ -372,12 +372,276 @@ app.post('/api/users', (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+//  PRICING & SUBSCRIPTIONS API
+// ═══════════════════════════════════════════════════════════════
+
+/** GET /api/pricing/plans — list all subscription tiers from SQL */
+app.get('/api/pricing/plans', (req, res) => {
+  try {
+    const plans = db.getPricingPlans();
+    res.json(plans);
+  } catch (err) {
+    console.error('SQL pricing plans error:', err);
+    res.status(500).json({ error: 'Failed to fetch pricing plans' });
+  }
+});
+
+/** POST /api/pricing/subscribe — change or upgrade user subscription */
+app.post('/api/pricing/subscribe', (req, res) => {
+  try {
+    const { planId, email, userId } = req.body;
+    const targetUser = userId || email || req.user?.id || req.user?.email || req.session?.user?.id || 'admin_1';
+
+    if (!planId) {
+      return res.status(400).json({ error: 'Plan ID is required (free, pro, enterprise)' });
+    }
+
+    const updated = db.updateUserPlan(targetUser, planId);
+    if (req.session?.user) {
+      req.session.user.plan = planId;
+    }
+
+    res.json({
+      success: true,
+      message: `Subscription successfully updated to ${planId.toUpperCase()}`,
+      subscription: updated
+    });
+  } catch (err) {
+    console.error('SQL subscribe error:', err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/** GET /api/pricing/my-subscription — get active plan for current user */
+app.get('/api/pricing/my-subscription', (req, res) => {
+  try {
+    const target = req.query.id || req.query.email || req.user?.id || req.user?.email || req.session?.user?.id || 'admin_1';
+    const sub = db.getUserSubscription(target);
+    res.json(sub);
+  } catch (err) {
+    console.error('Subscription fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch subscription' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  DOCUMENTATION API
+// ═══════════════════════════════════════════════════════════════
+
+/** GET /api/docs — list documentation catalog */
+app.get('/api/docs', (req, res) => {
+  try {
+    const docs = db.getDocsCatalog();
+    res.json(docs);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch documentation catalog' });
+  }
+});
+
+/** GET /api/docs/:id — get specific documentation article */
+app.get('/api/docs/:id', (req, res) => {
+  try {
+    const docs = db.getDocsCatalog();
+    const doc = docs.find(d => d.id === req.params.id);
+    if (!doc) return res.status(404).json({ error: 'Documentation topic not found' });
+    res.json(doc);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch documentation topic' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  A* ALGORITHM & HEURISTICS SOLVER API
+// ═══════════════════════════════════════════════════════════════
+
+/** POST /api/astar/solve — solve grid maze pathfinding with selected heuristic */
+app.post('/api/astar/solve', (req, res) => {
+  try {
+    const { grid, width, height, start, goal, heuristic, allowDiagonal } = req.body;
+
+    if (!start || !goal) {
+      return res.status(400).json({ error: 'Start [r,c] and Goal [r,c] coordinates are required.' });
+    }
+
+    const result = db.solveAStarGrid({
+      grid,
+      width: width || 20,
+      height: height || 20,
+      start,
+      goal,
+      heuristic: heuristic || 'manhattan',
+      allowDiagonal: Boolean(allowDiagonal)
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('A* solve error:', err);
+    res.status(500).json({ error: 'Failed to solve A* grid path: ' + err.message });
+  }
+});
+
+/** POST /api/astar/compare — compare Manhattan vs Euclidean heuristics */
+app.post('/api/astar/compare', (req, res) => {
+  try {
+    const { grid, width, height, start, goal, allowDiagonal } = req.body;
+
+    if (!start || !goal) {
+      return res.status(400).json({ error: 'Start [r,c] and Goal [r,c] coordinates are required.' });
+    }
+
+    const comparison = db.compareHeuristics({
+      grid,
+      width: width || 20,
+      height: height || 20,
+      start,
+      goal,
+      allowDiagonal: Boolean(allowDiagonal)
+    });
+
+    res.json(comparison);
+  } catch (err) {
+    console.error('A* comparison error:', err);
+    res.status(500).json({ error: 'Failed to compare heuristics: ' + err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  CITY MAP GRAPH & SHORTEST ROUTE API
+// ═══════════════════════════════════════════════════════════════
+
+/** GET /api/map/graph — get city map nodes and road edges */
+app.get('/api/map/graph', (req, res) => {
+  try {
+    const mapGraph = db.getMapGraph();
+    res.json(mapGraph);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch map graph' });
+  }
+});
+
+/** POST /api/map/route — solve shortest route between two map locations using A* */
+app.post('/api/map/route', (req, res) => {
+  try {
+    const { startId, goalId, heuristic } = req.body;
+    if (!startId || !goalId) {
+      return res.status(400).json({ error: 'startId and goalId are required.' });
+    }
+
+    const route = db.solveMapRoute({ 
+      startId, 
+      goalId, 
+      heuristic: heuristic || 'euclidean',
+      avoidAccidents: req.body.avoidAccidents !== false
+    });
+    res.json(route);
+  } catch (err) {
+    console.error('Map route error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  REAL-TIME ACCIDENT RATE MONITOR API
+// ═══════════════════════════════════════════════════════════════
+
+/** GET /api/accidents/stats — returns real-time accident rate and city hazard metrics */
+app.get('/api/accidents/stats', (req, res) => {
+  try {
+    const stats = db.getAccidentMonitorStats();
+    res.json(stats);
+  } catch (err) {
+    console.error('Accidents stats error:', err);
+    res.status(500).json({ error: 'Failed to fetch accident stats' });
+  }
+});
+
+/** POST /api/accidents/report — report a new road accident */
+app.post('/api/accidents/report', (req, res) => {
+  try {
+    const { road_name, from_node, to_node, severity, speed_drop_pct, delay_minutes, description } = req.body;
+    if (!road_name) {
+      return res.status(400).json({ error: 'road_name is required' });
+    }
+    const report = db.reportRoadAccident({ road_name, from_node, to_node, severity, speed_drop_pct, delay_minutes, description });
+    res.status(201).json(report);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to report accident' });
+  }
+});
+
+/** POST /api/accidents/simulate-random — simulate a live road accident */
+app.post('/api/accidents/simulate-random', (req, res) => {
+  try {
+    const accident = db.simulateRandomAccident();
+    const stats = db.getAccidentMonitorStats();
+    res.status(201).json({ accident, stats });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to simulate accident: ' + err.message });
+  }
+});
+
+/** POST /api/accidents/resolve/:id — mark accident as resolved */
+app.post('/api/accidents/resolve/:id', (req, res) => {
+  try {
+    const result = db.resolveRoadAccident(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to resolve accident' });
+  }
+});
+
+/** POST /api/accidents/clear — clear all active road hazards */
+app.post('/api/accidents/clear', (req, res) => {
+  try {
+    const result = db.clearAllRoadAccidents();
+    const stats = db.getAccidentMonitorStats();
+    res.json({ result, stats });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clear accidents' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  SAVED MAZES API
+// ═══════════════════════════════════════════════════════════════
+
+app.get('/api/mazes', (req, res) => {
+  try {
+    const mazes = db.getSavedMazes();
+    res.json(mazes);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch saved mazes' });
+  }
+});
+
+app.post('/api/mazes', (req, res) => {
+  try {
+    const { name, width, height, start, goal, walls } = req.body;
+    const author = req.user?.name || req.session?.user?.name || 'Local User';
+    const saved = db.saveMaze({ name, width, height, start, goal, walls, created_by: author });
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save maze' });
+  }
+});
+
 // ── Web Page & Auth Routes ────────────────────────────────────
 app.get(['/logout', '/signout'], (req, res) => res.redirect('/auth/logout'));
-app.get(['/login', '/signin'], (req, res) => res.redirect('/index.html?signin=true'));
+app.get(['/login', '/signin'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
 
 app.get(['/', '/index.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get(['/pricing', '/pricing.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'pricing.html'));
+});
+
+app.get(['/docs', '/docs.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'docs.html'));
 });
 
 app.get('/dashboard.html', (req, res) => {

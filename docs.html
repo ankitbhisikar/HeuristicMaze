@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — A* Algorithm & Routing Platform</title>
+  <meta name="description" content="Comprehensive documentation, heuristic analysis, and interactive REST API explorer for A* pathfinding and geographic routing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .docs-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 68px);
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .docs-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 32px 20px 32px 0;
+      position: sticky;
+      top: 68px;
+      height: calc(100vh - 68px);
+      overflow-y: auto;
+    }
+    .docs-nav-group { margin-bottom: 24px; }
+    .docs-nav-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      font-weight: 600;
+      margin-bottom: 8px;
+      padding-left: 8px;
+    }
+    .docs-nav-link {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: all 0.12s;
+    }
+    .docs-nav-link:hover { background: var(--panel-2); color: var(--text); }
+    .docs-nav-link.active { background: rgba(124, 156, 255, 0.12); color: var(--violet); font-weight: 600; }
+    
+    .docs-content {
+      padding: 36px 48px;
+      max-width: 860px;
+    }
+    .docs-section { margin-bottom: 56px; }
+    .docs-h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .docs-h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 28px 0 12px;
+      color: var(--text);
+    }
+    .docs-lead { font-size: 16px; color: var(--text-dim); line-height: 1.6; margin-bottom: 24px; }
+    .docs-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 18px 0;
+    }
+    .formula-box {
+      background: #0E1116;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--violet);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #A5D6FF;
+      margin: 14px 0;
+    }
+    .api-tester-card {
+      background: var(--panel);
+      border: 1px solid rgba(124, 156, 255, 0.25);
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+    .api-output {
+      background: #0B0D10;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #7EE787;
+      max-height: 240px;
+      overflow-y: auto;
+      margin-top: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="logo" style="text-decoration:none;"><span class="logo-dot"></span>beacon / A*</a>
+    <div class="nav-links">
+      <a href="index.html#maze-visualizer">Maze Visualizer</a>
+      <a href="index.html#map-routing">Map Pathfinder</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="docs.html" style="color:var(--violet);font-weight:600;">Docs</a>
+    </div>
+    <div class="nav-cta">
+      <a href="dashboard.html" class="btn btn-outline" style="font-size:13px;padding:7px 16px;">Dashboard</a>
+      <a href="index.html#maze-visualizer" class="btn btn-primary" style="font-size:13px;padding:7px 16px;">Run Visualizer</a>
+    </div>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <!-- Sidebar -->
+  <aside class="docs-sidebar">
+    <div class="docs-nav-group">
+      <div class="docs-nav-title">Algorithms & Theory</div>
+      <a href="#intro" class="docs-nav-link active">1. A* Fundamentals</a>
+      <a href="#heuristics" class="docs-nav-link">2. Manhattan vs. Euclidean</a>
+      <a href="#character" class="docs-nav-link">3. Character Movement & Traversal</a>
+      <a href="#map-path" class="docs-nav-link">4. City Map Road Routing</a>
+    </div>
+    <div class="docs-nav-group">
+      <div class="docs-nav-title">Developer Reference</div>
+      <a href="#api-endpoints" class="docs-nav-link">5. REST API Endpoints</a>
+      <a href="#interactive-tester" class="docs-nav-link">6. Live API Explorer</a>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <main class="docs-content">
+    
+    <!-- Section 1: Intro -->
+    <section id="intro" class="docs-section">
+      <h1 class="docs-h1">A* Pathfinding Algorithm Fundamentals</h1>
+      <p class="docs-lead">
+        A* (A-Star) is an optimal, complete, and mathematically informed graph search algorithm. It dynamically discovers the shortest path from a Start node <strong>(S)</strong> to a Goal node <strong>(G)</strong> by balancing actual path cost against an estimated distance heuristic.
+      </p>
+
+      <div class="docs-card">
+        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:8px;">Evaluation Function: f(n) = g(n) + h(n)</h3>
+        <div class="formula-box">
+          f(n) = g(n) + h(n)
+        </div>
+        <ul style="padding-left:20px;font-size:13.5px;color:var(--text-dim);line-height:1.7;">
+          <li><strong>g(n):</strong> The exact accumulated cost from the initial Start node to the current node <code>n</code>.</li>
+          <li><strong>h(n):</strong> The estimated heuristic cost from node <code>n</code> to the target Goal node.</li>
+          <li><strong>f(n):</strong> The total estimated lowest-cost path going through node <code>n</code>.</li>
+        </ul>
+      </div>
+
+      <h2 class="docs-h2">Mathematical Guarantees</h2>
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">
+        If the heuristic function \(h(n)\) is <strong>admissible</strong> (it never overestimates the true remaining cost to the goal) and <strong>consistent</strong> (monotonic, satisfying the triangle inequality), A* is mathematically guaranteed to find the true globally optimal shortest path without unnecessary backtracking.
+      </p>
+    </section>
+
+    <!-- Section 2: Heuristics -->
+    <section id="heuristics" class="docs-section">
+      <h1 class="docs-h1">Manhattan vs. Euclidean Heuristics</h1>
+      <p class="docs-lead">
+        Selecting the appropriate heuristic depends on the geometry and movement constraints of the search space.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:24px 0;">
+        <div class="docs-card" style="border-top:3px solid var(--violet);">
+          <div style="font-weight:600;font-size:16px;color:var(--violet);margin-bottom:6px;">Manhattan Distance (L₁ Norm)</div>
+          <div class="formula-box" style="border-left-color:var(--violet);">
+            h(n) = |x₁ - x₂| + |y₁ - y₂|
+          </div>
+          <p style="font-size:13px;color:var(--text-dim);line-height:1.5;">
+            Calculates grid distance when diagonal movement is forbidden and agents can only travel in 4 cardinal directions (Up, Down, Left, Right).
+          </p>
+          <div style="margin-top:12px;font-size:12px;color:var(--green);">
+            ✓ Perfectly consistent for orthogonal 4-directional grids.
+          </div>
+        </div>
+
+        <div class="docs-card" style="border-top:3px solid var(--green);">
+          <div style="font-weight:600;font-size:16px;color:var(--green);margin-bottom:6px;">Euclidean Distance (L₂ Norm)</div>
+          <div class="formula-box" style="border-left-color:var(--green);">
+            h(n) = √((x₁ - x₂)² + (y₁ - y₂)²)
+          </div>
+          <p style="font-size:13px;color:var(--text-dim);line-height:1.5;">
+            Calculates straight-line geometric distance ("as the crow flies"). Ideal for continuous coordinate planes, 8-directional grids, and GPS maps.
+          </p>
+          <div style="margin-top:12px;font-size:12px;color:var(--violet);">
+            ✓ Optimal for geographic road routing and unrestricted motion.
+          </div>
+        </div>
+      </div>
+
+      <div class="docs-card">
+        <h3 style="font-size:15px;margin-bottom:8px;">Why compare both heuristics?</h3>
+        <p style="font-size:13px;color:var(--text-dim);line-height:1.6;">
+          On a standard 4-directional grid, Manhattan heuristic matches the actual step cost exactly, meaning it prunes dead ends more aggressively and usually explores fewer closed nodes. Euclidean distance underestimates 4-directional steps (\(\sqrt{2} \approx 1.414 < 2\)), so it explores slightly more frontier nodes while still maintaining admissibility and finding the identical optimal path.
+        </p>
+      </div>
+    </section>
+
+    <!-- Section 3: Character Movement -->
+    <section id="character" class="docs-section">
+      <h1 class="docs-h1">Character Movement & Traversal</h1>
+      <p class="docs-lead">
+        Once the optimal path array is computed by the A* solver, an autonomous agent (represented by 🤖 or 🏃) sequentially traverses the coordinates from Start to Goal.
+      </p>
+      <div class="docs-card">
+        <div style="font-size:13.5px;color:var(--text-dim);line-height:1.6;">
+          1. <strong>Exploration Phase:</strong> Cells entered into the closed set trigger a subtle wave animation.<br>
+          2. <strong>Path Reconstruction:</strong> Backtracking from the Goal via parent pointers reconstructs the path in \(O(L)\) steps.<br>
+          3. <strong>Character Traversal:</strong> An animation loop updates the character's active cell coordinates at set intervals, with arrival celebration at Goal (G).
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Map Routing -->
+    <section id="map-path" class="docs-section">
+      <h1 class="docs-h1">City Map Road Network Shortest Path</h1>
+      <p class="docs-lead">
+        Geographic routing scales A* from 2D discrete grids to arbitrary weighted graph networks \(G = (V, E)\) with landmarks and road segments.
+      </p>
+      <div class="docs-card">
+        <p style="font-size:13px;color:var(--text-dim);line-height:1.6;">
+          Vertices represent transit hubs, university campuses, airports, and hospitals. Edges represent bidirectional roads with real-world lengths (km) and speed classifications. The A* algorithm uses coordinate distance as \(h(n)\) to prune route alternatives and deliver instant turn-by-turn navigation.
+        </p>
+      </div>
+    </section>
+
+    <!-- Section 5: REST API Endpoints -->
+    <section id="api-endpoints" class="docs-section">
+      <h1 class="docs-h1">REST API Reference</h1>
+      <p class="docs-lead">
+        All algorithmic calculations, comparisons, road graphs, pricing, and system data are fully queryable via backend REST endpoints.
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="docs-card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(124,156,255,0.18);color:var(--violet);">POST</span>
+            <code style="font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600;">/api/astar/solve</code>
+          </div>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Solves grid maze pathfinding. Payload: <code>{ grid, width, height, start:[r,c], goal:[r,c], heuristic }</code></p>
+        </div>
+
+        <div class="docs-card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(124,156,255,0.18);color:var(--violet);">POST</span>
+            <code style="font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600;">/api/astar/compare</code>
+          </div>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Runs both Manhattan and Euclidean heuristics side-by-side, returning comparative node counts and analytics.</p>
+        </div>
+
+        <div class="docs-card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(111,207,151,0.18);color:var(--green);">GET</span>
+            <code style="font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600;">/api/map/graph</code>
+          </div>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Returns city road network nodes, coordinates, and road segments.</p>
+        </div>
+
+        <div class="docs-card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(124,156,255,0.18);color:var(--violet);">POST</span>
+            <code style="font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600;">/api/map/route</code>
+          </div>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Finds shortest driving path between two city locations. Payload: <code>{ startId, goalId }</code></p>
+        </div>
+
+        <div class="docs-card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(111,207,151,0.18);color:var(--green);">GET</span>
+            <code style="font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:600;">/api/pricing/plans</code>
+          </div>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">Returns available pricing tiers (Free, Pro, Enterprise) stored in SQLite.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Interactive Live API Explorer -->
+    <section id="interactive-tester" class="docs-section">
+      <h1 class="docs-h1">Live Interactive API Explorer</h1>
+      <p class="docs-lead">
+        Send real HTTP requests to the live backend server right from this page to inspect JSON responses.
+      </p>
+
+      <div class="api-tester-card">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="testApi('/api/pricing/plans', 'GET')">GET /api/pricing/plans</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="testApi('/api/map/graph', 'GET')">GET /api/map/graph</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="testAStarSolveApi()">POST /api/astar/solve (Sample)</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 14px;" onclick="testApi('/api/incidents', 'GET')">GET /api/incidents</button>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-faint);margin-bottom:6px;">Live Backend Response:</div>
+        <div class="api-output" id="apiResponseBox">// Click any endpoint above to execute live query on the backend SQL server...</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+async function testApi(url, method = 'GET', body = null) {
+  const box = document.getElementById('apiResponseBox');
+  box.textContent = `Sending ${method} ${url} to server…`;
+  try {
+    const opts = { method };
+    if (body) {
+      opts.headers = { 'Content-Type': 'application/json' };
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(url, opts);
+    const data = await res.json();
+    box.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    box.textContent = `Error connecting to backend: ${err.message}`;
+  }
+}
+
+function testAStarSolveApi() {
+  testApi('/api/astar/solve', 'POST', {
+    width: 10,
+    height: 10,
+    start: [1, 1],
+    goal: [8, 8],
+    heuristic: 'manhattan'
+  });
+}
+</script>
+
+</body>
+</html>

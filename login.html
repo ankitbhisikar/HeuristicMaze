@@ -3,17 +3,282 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0; url=index.html?signin=true">
-  <title>Beacon — Sign In</title>
-  <script>
-    window.location.replace('index.html?signin=true');
-  </script>
+  <title>Sign In — Beacon / A* Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(circle at 50% 20%, rgba(124, 156, 255, 0.08), var(--bg) 75%);
+    }
+    .login-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+      position: relative;
+      overflow: hidden;
+    }
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 156, 255, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+    .auth-notice {
+      display: none;
+      background: rgba(124, 156, 255, 0.12);
+      border: 1px solid rgba(124, 156, 255, 0.35);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 20px;
+      align-items: center;
+      gap: 12px;
+      animation: pulseGlow 2.5s infinite alternate;
+    }
+    @keyframes pulseGlow {
+      from { box-shadow: 0 0 0 0 rgba(124,156,255,0.1); }
+      to   { box-shadow: 0 0 16px 2px rgba(124,156,255,0.25); }
+    }
+    .demo-account-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      transition: all 0.15s ease;
+      margin-bottom: 8px;
+    }
+    .demo-account-btn:hover {
+      background: #232832;
+      border-color: rgba(124, 156, 255, 0.4);
+      transform: translateY(-1px);
+    }
+    .account-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+  </style>
 </head>
-<body style="background:#0c0e12;color:#E8EAED;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-  <div style="text-align:center;">
-    <div style="font-size:24px;font-weight:700;margin-bottom:8px;color:#7C9CFF;">beacon</div>
-    <p style="color:#9AA0A6;font-size:14px;">Redirecting to Sign In...</p>
-    <a href="index.html?signin=true" style="color:#7C9CFF;text-decoration:none;font-size:13px;">Click here if not redirected automatically</a>
+<body>
+
+<!-- Minimal Nav -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="logo" style="text-decoration:none;"><span class="logo-dot"></span>beacon / A*</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="docs.html">Docs</a>
+    </div>
+    <div class="nav-cta">
+      <a href="index.html" class="btn btn-outline" style="font-size:12px;padding:6px 14px;">← Back to Main</a>
+    </div>
   </div>
+</nav>
+
+<div class="login-container">
+  <div class="login-card">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span class="logo-dot" style="width:12px;height:12px;"></span>
+      <h1 class="display" style="font-size:22px;font-weight:700;">Welcome to Beacon / A*</h1>
+    </div>
+
+    <!-- Dynamic Redirect Alert -->
+    <div id="authNotice" class="auth-notice" style="display:none;">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(124,156,255,0.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--violet);">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:13.5px;color:#fff;">Sign In Required</div>
+        <div id="authNoticeText" style="font-size:12px;color:var(--text-dim);margin-top:2px;">Please sign in to launch the A* Maze Visualizer.</div>
+      </div>
+    </div>
+
+    <!-- Quick resume if session is already active -->
+    <div id="existingSessionNotice" style="display:none;background:rgba(111,207,151,0.12);border:1px solid rgba(111,207,151,0.35);border-radius:12px;padding:12px 16px;margin-bottom:18px;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:11.5px;color:var(--green);">✓ Active Session Detected</div>
+        <div id="existingUserName" style="font-weight:600;font-size:13.5px;color:var(--text);margin-top:1px;">—</div>
+      </div>
+      <button id="btnContinueExisting" class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;">Proceed to Maze →</button>
+    </div>
+
+    <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:20px;line-height:1.5;" id="defaultSubtitle">
+      Sign in to manage on-call rotations, save customized mazes, and run A* pathfinding simulations.
+    </p>
+
+    <!-- Google Button -->
+    <button class="btn-google" id="googleBtn" type="button" style="margin-bottom:20px;" onclick="handleGoogleSignIn()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="divider">or choose an account</div>
+
+    <!-- Quick Demo Accounts -->
+    <div style="display:flex;flex-direction:column;margin-top:16px;">
+      <!-- Account 1: Ankit Dev (Admin) -->
+      <button class="demo-account-btn" onclick="loginAsDemo(0)">
+        <div class="account-avatar" style="background:#4285F4;">A</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:6px;">
+            Ankit Dev
+            <span class="admin-tag" style="font-size:10px;padding:1px 6px;">👑 Admin</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-faint);">ankit@example.com</div>
+        </div>
+        <span style="font-size:12px;color:var(--violet);">Sign in →</span>
+      </button>
+
+      <!-- Account 2: Beacon Admin -->
+      <button class="demo-account-btn" onclick="loginAsDemo(1)">
+        <div class="account-avatar" style="background:#7C9CFF;">B</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:6px;">
+            Beacon Admin
+            <span class="admin-tag" style="font-size:10px;padding:1px 6px;">👑 Admin</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-faint);">admin@beacon.app</div>
+        </div>
+        <span style="font-size:12px;color:var(--violet);">Sign in →</span>
+      </button>
+
+      <!-- Account 3: Priya Mehta -->
+      <button class="demo-account-btn" onclick="loginAsDemo(2)">
+        <div class="account-avatar" style="background:#34A853;">P</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:6px;">
+            Priya Mehta
+            <span class="member-tag" style="font-size:10px;padding:1px 6px;">👤 Member</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-faint);">priya@beacon.app</div>
+        </div>
+        <span style="font-size:12px;color:var(--violet);">Sign in →</span>
+      </button>
+    </div>
+
+    <div style="margin-top:20px;text-align:center;font-size:12px;color:var(--text-faint);">
+      Full SQL database synchronization with <span class="mono" style="color:var(--text-dim);">beacon.db</span>.
+    </div>
+  </div>
+</div>
+
+<script>
+const DEMO_USERS = [
+  { id: 'usr_seed_1', name: 'Ankit Dev', email: 'ankit@example.com', role: 'admin', is_admin: 1, plan: 'enterprise' },
+  { id: 'admin_2', name: 'Beacon Admin', email: 'admin@beacon.app', role: 'admin', is_admin: 1, plan: 'enterprise' },
+  { id: 'usr_seed_2', name: 'Priya Mehta', email: 'priya@beacon.app', role: 'member', is_admin: 0, plan: 'pro' }
+];
+
+const urlParams = new URLSearchParams(window.location.search);
+const redirectTarget = urlParams.get('redirect') || sessionStorage.getItem('auth_redirect') || '';
+const isMazeRedirect = redirectTarget === 'maze-visualizer' || redirectTarget.includes('maze');
+
+if (isMazeRedirect) {
+  const notice = document.getElementById('authNotice');
+  if (notice) notice.style.display = 'flex';
+  const subtitle = document.getElementById('defaultSubtitle');
+  if (subtitle) {
+    subtitle.innerHTML = 'Sign in with your account to unlock the <strong>A* Maze Visualizer</strong>, save custom grids, and simulate algorithmic character pathfinding.';
+  }
+}
+
+// Check if an existing session is already active in localStorage
+try {
+  const existing = JSON.parse(localStorage.getItem('beacon_user'));
+  if (existing && existing.name) {
+    const box = document.getElementById('existingSessionNotice');
+    const nameEl = document.getElementById('existingUserName');
+    const btn = document.getElementById('btnContinueExisting');
+    if (box && nameEl && btn) {
+      box.style.display = 'flex';
+      nameEl.textContent = `${existing.name} (${existing.role === 'admin' ? 'Admin' : 'Member'})`;
+      btn.onclick = () => {
+        sessionStorage.removeItem('auth_redirect');
+        if (isMazeRedirect) {
+          window.location.href = 'index.html?login_success=true#maze-visualizer';
+        } else if (redirectTarget) {
+          window.location.href = redirectTarget;
+        } else {
+          window.location.href = 'dashboard.html';
+        }
+      };
+    }
+  }
+} catch (_) {}
+
+async function loginAsDemo(index) {
+  const user = DEMO_USERS[index];
+  try {
+    await fetch('/auth/dev-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    });
+  } catch (_) {}
+
+  localStorage.setItem('beacon_user', JSON.stringify(user));
+  sessionStorage.removeItem('auth_redirect');
+
+  // If redirecting to maze visualizer, go to index.html?login_success=true#maze-visualizer
+  if (isMazeRedirect) {
+    window.location.href = 'index.html?login_success=true#maze-visualizer';
+  } else if (redirectTarget) {
+    window.location.href = redirectTarget;
+  } else {
+    window.location.href = 'dashboard.html';
+  }
+}
+
+function handleGoogleSignIn() {
+  // If real Google auth is configured, trigger OAuth; otherwise pick first demo account
+  loginAsDemo(0);
+}
+</script>
+
 </body>
 </html>

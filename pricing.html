@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing & Plans — Beacon / A* Platform</title>
+  <meta name="description" content="Flexible pricing plans for developers, algorithmic researchers, and engineering teams. Full backend subscription integration.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .billing-toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 32px 0 20px;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--panel-2);
+      border: 1px solid var(--border);
+      transition: .3s;
+      border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background-color: var(--text-dim);
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: rgba(124, 156, 255, 0.25); border-color: var(--violet); }
+    input:checked + .slider:before { transform: translateX(22px); background-color: var(--violet); }
+    .save-pill {
+      background: rgba(111, 207, 151, 0.15);
+      border: 1px solid rgba(111, 207, 151, 0.3);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+    .active-plan-banner {
+      max-width: 600px;
+      margin: 0 auto 36px;
+      background: rgba(124, 156, 255, 0.08);
+      border: 1px solid rgba(124, 156, 255, 0.25);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="logo" style="text-decoration:none;"><span class="logo-dot"></span>beacon / A*</a>
+    <div class="nav-links">
+      <a href="index.html#maze-visualizer">Maze Visualizer</a>
+      <a href="index.html#map-routing">Map Pathfinder</a>
+      <a href="pricing.html" style="color:var(--violet);font-weight:600;">Pricing</a>
+      <a href="docs.html">Docs</a>
+    </div>
+    <div class="nav-cta">
+      <a href="dashboard.html" class="btn btn-outline" style="font-size:13px;padding:7px 16px;">Dashboard</a>
+      <a href="index.html#maze-visualizer" class="btn btn-primary" style="font-size:13px;padding:7px 16px;">Run Visualizer</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap" style="padding-top:60px;padding-bottom:90px;">
+  <div style="text-align:center;max-width:680px;margin:0 auto;">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:var(--violet);font-weight:600;margin-bottom:8px;">
+      Predictable Pricing & Full Backend Support
+    </div>
+    <h1 class="display" style="font-size:42px;font-weight:700;letter-spacing:-0.02em;margin-bottom:12px;">
+      Choose the right plan for your team
+    </h1>
+    <p style="font-size:16px;color:var(--text-dim);line-height:1.5;">
+      From academic algorithm practice to production enterprise incident response and custom heuristic routing.
+    </p>
+
+    <!-- Monthly / Annual Toggle -->
+    <div class="billing-toggle-wrap">
+      <span style="font-size:13.5px;color:var(--text);font-weight:500;">Monthly</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="billingToggle" onchange="toggleBilling(this)">
+        <span class="slider"></span>
+      </label>
+      <span style="font-size:13.5px;color:var(--text);font-weight:500;">Annual</span>
+      <span class="save-pill">Save 20%</span>
+    </div>
+  </div>
+
+  <!-- Current Active Subscription Banner -->
+  <div class="active-plan-banner" id="activeSubBanner">
+    <div>
+      <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;">Active SQLite Account Tier</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-top:2px;" id="currentSubText">Loading subscription from backend…</div>
+    </div>
+    <span class="admin-tag" id="subStatusTag">● SQL Active</span>
+  </div>
+
+  <!-- Pricing Cards Grid -->
+  <div class="pricing-grid" id="pricingCardsGrid">
+    <!-- Card 1: Free -->
+    <div class="pricing-card" id="card-free">
+      <div class="pricing-title">Starter / Free</div>
+      <div class="pricing-sub">Essential for students, individuals, and algorithm visualizer practice.</div>
+      <div class="pricing-price">
+        <span class="pricing-num">$0</span>
+        <span class="pricing-period">/ month</span>
+      </div>
+      <ul class="pricing-features">
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited Maze Grid Pathfinding</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Manhattan & Euclidean Heuristics</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Autonomous Character Animation</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Basic City Road Map Routing</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Community Documentation</li>
+      </ul>
+      <button class="btn btn-outline" style="width:100%;" onclick="subscribeToPlan('free')">Current Free Tier</button>
+    </div>
+
+    <!-- Card 2: Pro (Featured) -->
+    <div class="pricing-card featured" id="card-pro">
+      <span class="pricing-badge-popular">Most Popular</span>
+      <div class="pricing-title">Pro Developer</div>
+      <div class="pricing-sub">For software engineers, competitive programmers, and operational on-call teams.</div>
+      <div class="pricing-price">
+        <span class="pricing-num" id="price-pro">$29</span>
+        <span class="pricing-period" id="period-pro">/ month</span>
+      </div>
+      <ul class="pricing-features">
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Everything in Starter</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Side-by-Side Heuristic Comparison</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom Maze Save & SQL Export</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Full REST API Access (/api/*)</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Priority Incident Routing & Alerts</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%;" onclick="subscribeToPlan('pro')">Upgrade to Pro</button>
+    </div>
+
+    <!-- Card 3: Enterprise -->
+    <div class="pricing-card" id="card-enterprise">
+      <div class="pricing-title">Enterprise Team</div>
+      <div class="pricing-sub">For universities, engineering departments, and high-scale production systems.</div>
+      <div class="pricing-price">
+        <span class="pricing-num" id="price-enterprise">$99</span>
+        <span class="pricing-period" id="period-enterprise">/ month</span>
+      </div>
+      <ul class="pricing-features">
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom Heuristic Weights (Admissible & Inadmissible)</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited Monitored Microservices</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Multi-Shift On-Call Escalation</li>
+        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Dedicated SQLite Backups & 24/7 Support</li>
+      </ul>
+      <button class="btn btn-outline" style="width:100%;" onclick="subscribeToPlan('enterprise')">Select Enterprise</button>
+    </div>
+  </div>
+
+  <!-- FAQ Section -->
+  <div style="max-width:800px;margin:80px auto 0;">
+    <h2 class="display" style="font-size:26px;font-weight:600;margin-bottom:24px;text-align:center;">
+      Frequently Asked Questions
+    </h2>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+        <div style="font-weight:600;font-size:15px;color:var(--text);">How does plan selection work with the backend?</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:6px;line-height:1.5;">
+          When you select or upgrade a plan, your choice is sent via <code>POST /api/pricing/subscribe</code> directly to the local SQLite database (<code>beacon.db</code>). The <code>users</code> table updates your subscription tier immediately.
+        </div>
+      </div>
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+        <div style="font-weight:600;font-size:15px;color:var(--text);">Can I test the A* Algorithm and Map Pathfinder on the Free tier?</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:6px;line-height:1.5;">
+          Yes! The Free plan gives you full access to both the interactive Maze Grid with Character Animation and the City Map Shortest Route Pathfinder.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" style="position:fixed;bottom:24px;right:24px;z-index:9999;"></div>
+
+<script>
+let isAnnual = false;
+
+function toggleBilling(toggle) {
+  isAnnual = toggle.checked;
+  const proPrice = document.getElementById('price-pro');
+  const proPeriod = document.getElementById('period-pro');
+  const entPrice = document.getElementById('price-enterprise');
+  const entPeriod = document.getElementById('period-enterprise');
+
+  if (isAnnual) {
+    proPrice.textContent = '$23';
+    proPeriod.textContent = '/ month (billed $276/yr)';
+    entPrice.textContent = '$79';
+    entPeriod.textContent = '/ month (billed $948/yr)';
+  } else {
+    proPrice.textContent = '$29';
+    proPeriod.textContent = '/ month';
+    entPrice.textContent = '$99';
+    entPeriod.textContent = '/ month';
+  }
+}
+
+async function loadActiveSubscription() {
+  try {
+    const res = await fetch('/api/pricing/my-subscription');
+    if (res.ok) {
+      const data = await res.json();
+      const txt = document.getElementById('currentSubText');
+      if (txt) {
+        txt.textContent = `Current Plan: ${data.plan_name || data.plan.toUpperCase()} ($${data.price_monthly || 0}/mo)`;
+      }
+      highlightActivePlanCard(data.plan);
+    }
+  } catch (_) {
+    document.getElementById('currentSubText').textContent = 'Current Plan: Starter / Free';
+  }
+}
+
+function highlightActivePlanCard(planId) {
+  document.querySelectorAll('.pricing-card').forEach(c => c.style.outline = '');
+  const activeCard = document.getElementById(`card-${planId}`);
+  if (activeCard) {
+    activeCard.style.outline = '2px solid var(--green)';
+    const btn = activeCard.querySelector('button');
+    if (btn) {
+      btn.textContent = 'Active Plan ✓';
+      btn.classList.add('btn-outline');
+      btn.classList.remove('btn-primary');
+    }
+  }
+}
+
+async function subscribeToPlan(planId) {
+  try {
+    const res = await fetch('/api/pricing/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planId })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`Successfully subscribed to ${planId.toUpperCase()}! ✓`);
+      loadActiveSubscription();
+    } else {
+      showToast(data.error || 'Failed to update subscription', 'error');
+    }
+  } catch (err) {
+    showToast('Error updating plan: ' + err.message, 'error');
+  }
+}
+
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.style.cssText = `
+    background: #14171c;
+    border: 1px solid ${type === 'success' ? 'rgba(111,207,151,0.45)' : 'rgba(229,105,122,0.45)'};
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: #fff;
+    margin-top: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  `;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadActiveSubscription();
+
+  // Redirect unauthenticated users clicking visualizer links to login first
+  document.querySelectorAll('a[href*="maze-visualizer"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      let hasUser = false;
+      try {
+        const u = JSON.parse(localStorage.getItem('beacon_user'));
+        if (u && u.id) hasUser = true;
+      } catch (_) {}
+      if (!hasUser) {
+        e.preventDefault();
+        sessionStorage.setItem('auth_redirect', 'index.html?login_success=true#maze-visualizer');
+        window.location.href = 'login.html?redirect=maze-visualizer';
+      }
+    });
+  });
+});
+</script>
+
+</body>
+</html>

@@ -188,10 +188,12 @@
   <div class="wrap">
     <a href="index.html" class="logo" style="text-decoration:none;"><span class="logo-dot"></span>beacon</a>
     <div class="nav-links">
-      <a href="#">Incidents</a>
-      <a href="#">Services</a>
-      <a href="#">Schedules</a>
-      <a href="#">Reports</a>
+      <a href="javascript:void(0)" onclick="switchView('dashboard')">Overview</a>
+      <a href="javascript:void(0)" onclick="switchView('visualizer')">A* Maze Grid</a>
+      <a href="javascript:void(0)" onclick="switchView('maproute')">Map Route</a>
+      <a href="javascript:void(0)" onclick="switchView('incidents')">Incidents</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="docs.html">Docs</a>
     </div>
     <div class="nav-cta">
       <div id="backendBadge" style="font-size:11px;padding:4px 10px;border-radius:20px;
@@ -288,6 +290,17 @@
       </a>
     </div>
     <div class="sidebar-section">
+      <div class="sidebar-label">A* Algorithms</div>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="visualizer" id="btnNavVisualizer" onclick="switchView('visualizer')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        A* Maze Grid
+      </a>
+      <a href="javascript:void(0)" class="sidebar-item" data-view="maproute" id="btnNavMapRoute" onclick="switchView('maproute')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Map & Accident Monitor
+      </a>
+    </div>
+    <div class="sidebar-section">
       <div class="sidebar-label">On-call</div>
       <a href="javascript:void(0)" class="sidebar-item" data-view="schedules" id="btnNavSchedules" onclick="switchView('schedules')">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -303,6 +316,17 @@
       <a href="javascript:void(0)" class="sidebar-item" data-view="reports" id="btnNavReports" onclick="switchView('reports')">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Reports
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Resources</div>
+      <a href="pricing.html" class="sidebar-item">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Pricing & Plans
+      </a>
+      <a href="docs.html" class="sidebar-item">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        Documentation
       </a>
     </div>
   </aside>
@@ -517,6 +541,209 @@
       </div>
     </div>
 
+    <!-- VIEW 7: A* MAZE VISUALIZER -->
+    <div id="viewVisualizer" class="tab-view">
+      <div class="maze-controls-bar">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button id="btnRunAStar" class="btn btn-primary">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Find Shortest Path
+          </button>
+          <button id="btnCompareHeuristics" class="btn btn-outline" style="border-color:rgba(240,163,69,0.5);color:var(--amber);">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Compare Heuristics
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Heuristic:</span>
+          <div class="heuristic-toggle-group">
+            <button id="btnHeuristicManhattan" class="heuristic-btn active">
+              <span>📐 Manhattan</span>
+            </button>
+            <button id="btnHeuristicEuclidean" class="heuristic-btn euclidean">
+              <span>📏 Euclidean</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <button id="btnSampleMaze" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Sample Maze</button>
+          <button id="btnRandomMaze" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Random Walls</button>
+          <button id="btnClearWalls" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Clear Walls</button>
+          <button id="btnResetGrid" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Reset</button>
+        </div>
+      </div>
+
+      <div id="heuristicFormulaText" style="font-size:12.5px;color:var(--text-dim);background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;">
+        <strong>Manhattan (L₁ Norm):</strong> <span class="mono">|x₁ - x₂| + |y₁ - y₂|</span> — Exact orthogonal grid distance.
+      </div>
+
+      <div class="maze-grid-wrapper">
+        <div class="maze-grid" id="mazeGrid"></div>
+      </div>
+
+      <div class="maze-metrics-grid" id="mazeMetricsGrid" style="margin-top:16px;">
+        <div class="metric-card">
+          <div class="metric-card-label">Path Cost (g)</div>
+          <div class="metric-card-val c-green" id="metricPathCost">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Nodes Explored</div>
+          <div class="metric-card-val c-violet" id="metricNodesExplored">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Path Length</div>
+          <div class="metric-card-val" id="metricPathLength">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Execution Time</div>
+          <div class="metric-card-val mono" id="metricTimeTaken">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Active Heuristic</div>
+          <div class="metric-card-val c-amber" id="metricHeuristic">MANHATTAN</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 8: CITY MAP ROUTE PATHFINDER & ACCIDENT MONITOR -->
+    <div id="viewMaproute" class="tab-view">
+      <!-- ── REAL-TIME ACCIDENT RATE MONITOR ───────────────────── -->
+      <div id="accident-monitor" class="accident-monitor-wrap">
+        <div class="accident-monitor-top">
+          <div>
+            <div class="live-badge-container" style="margin-bottom:6px;">
+              <div class="live-pulse-indicator">
+                <span class="live-pulse-dot"></span>
+                Live Metro Telemetry
+              </div>
+              <span id="telemetryLastUpdated" style="font-size:11.5px;color:var(--text-faint);">Updated just now</span>
+            </div>
+            <h3 class="display" style="font-size:20px;font-weight:700;letter-spacing:-0.01em;">
+              Real-Time Accident Rate & Road Hazard Monitor
+            </h3>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button id="btnSimulateAccident" class="btn btn-outline" style="border-color:rgba(229,105,122,0.45);color:var(--red);font-size:12px;padding:7px 14px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Simulate Collision
+            </button>
+            <button id="btnClearAccidents" class="btn btn-outline" style="border-color:rgba(111,207,151,0.45);color:var(--green);font-size:12px;padding:7px 14px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Clear All Hazards
+            </button>
+          </div>
+        </div>
+
+        <!-- Live KPI Metric Cards -->
+        <div class="accident-metrics-grid">
+          <div class="accident-card" id="cardAccidentRate">
+            <div class="accident-card-label">
+              <span>Accident Rate</span>
+              <span id="badgeRiskLevel" class="risk-pill critical">Critical</span>
+            </div>
+            <div class="accident-card-val">
+              <span id="valAccidentRate">4.8</span>
+              <span style="font-size:13px;font-weight:500;color:var(--text-dim);"> / 10k trips</span>
+            </div>
+            <div class="accident-card-sub" id="subRateTrend">
+              <span>📈 +0.8% from hourly baseline</span>
+            </div>
+          </div>
+
+          <div class="accident-card">
+            <div class="accident-card-label">
+              <span>Active Road Collisions</span>
+              <span id="badgeActiveIncidents" style="font-size:11px;color:var(--red);font-weight:600;">2 active</span>
+            </div>
+            <div class="accident-card-val c-red" id="valActiveCollisions">2</div>
+            <div class="accident-card-sub" id="subSeverityBreakdown">
+              2 Critical · 0 Moderate · 0 Minor
+            </div>
+          </div>
+
+          <div class="accident-card">
+            <div class="accident-card-label">
+              <span>City Congestion Index</span>
+              <span id="badgeCongestion" class="risk-pill moderate">Heavy</span>
+            </div>
+            <div class="accident-card-val c-amber" id="valCongestionIndex">78%</div>
+            <div class="accident-card-sub" id="subTotalDelay">
+              +57 min cumulative arterial delay
+            </div>
+          </div>
+
+          <div class="accident-card">
+            <div class="accident-card-label">
+              <span>Emergency Dispatch ETA</span>
+              <span class="risk-pill normal">En Route</span>
+            </div>
+            <div class="accident-card-val c-green" id="valEmergencyEta">4.2 min</div>
+            <div class="accident-card-sub" id="subResolvedToday">
+              12 incidents cleared today
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls & Rerouting Policy Row -->
+        <div class="accident-controls-row">
+          <label class="avoidance-toggle" title="When enabled, A* applies severe risk penalties to roads with active accidents, automatically calculating an optimal detour">
+            <input type="checkbox" id="chkAvoidAccidents" checked>
+            <span><strong>🛡️ Dynamic Accident Avoidance Mode</strong> (Hazard-Aware A* Auto-Reroute)</span>
+          </label>
+          <div style="font-size:12px;color:var(--text-dim);">
+            Corridors with active collisions are penalized up to <strong>5.0×</strong> to steer traffic away from danger.
+          </div>
+        </div>
+
+        <!-- Live Incident Stream / Ticker -->
+        <div class="accident-ticker-box">
+          <div class="accident-ticker-head">
+            <span>Active Incident Feed & Road Impedances</span>
+            <span id="activeIncidentsCountText" style="color:var(--text-dim);font-weight:500;">2 Ongoing Hazards</span>
+          </div>
+          <div id="accidentIncidentList" class="accident-incident-list">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="map-container">
+        <div class="map-header">
+          <div class="map-controls-row">
+            <label style="font-size:13px;color:var(--text-dim);font-weight:500;">From:</label>
+            <select id="mapOriginSelect" class="map-select"></select>
+
+            <label style="font-size:13px;color:var(--text-dim);font-weight:500;">To:</label>
+            <select id="mapDestSelect" class="map-select"></select>
+
+            <button id="btnFindMapRoute" class="btn btn-primary" style="padding:9px 18px;font-size:13px;">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              Find Shortest Route
+            </button>
+          </div>
+          <div style="font-size:12px;color:var(--text-faint);">
+            Metropolitan Graph Network · A* Euclidean Routing
+          </div>
+        </div>
+
+        <div class="map-canvas-wrap">
+          <canvas id="mapCanvas"></canvas>
+        </div>
+
+        <div class="map-route-panel">
+          <div id="mapRouteSummary" style="display:none;margin-bottom:16px;"></div>
+          <div id="mapRouteSteps" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px;">
+            <div style="color:var(--text-faint);font-size:13px;padding:8px 0;">
+              Select locations above and click <strong>Find Shortest Route</strong>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -528,6 +755,7 @@
 <!-- ── App scripts ─────────────────────────────────────────────── -->
 <script src="firebase-config.js"></script>
 <script src="db.js"></script>
+<script src="astar-engine.js"></script>
 
 <script>
 // ════════════════════════════════════════════════════════════════
@@ -583,12 +811,14 @@ let currentIncidentFilter = 'all';
 let currentUserData = null;
 
 const VIEW_TITLES = {
-  dashboard: { title: name => `Welcome back, ${name} 👋`, sub: "Here's what's happening across your services right now." },
-  incidents: { title: () => "Incident Management", sub: "Browse, filter, and triage real-time incidents stored in the SQL database." },
-  services:  { title: () => "Monitored Microservices", sub: "Real-time health status, latency, and uptime from the SQLite services table." },
-  schedules: { title: () => "On-Call Rotations & Schedules", sub: "Active engineer shift coverage, rotation timeline, and escalation policies." },
-  teams:     { title: () => "Team & Admin Permissions", sub: "Inspect team members and verify Admin IDs against the SQL users table." },
-  reports:   { title: () => "Incident Analytics & Reports", sub: "Aggregated SQL metrics, resolution rates, and microservice rankings." }
+  dashboard:  { title: name => `Welcome back, ${name} 👋`, sub: "Here's what's happening across your services right now." },
+  visualizer: { title: () => "A* Maze Pathfinding & Character Traversal", sub: "Interactive 2D maze grid with walls, heuristics (Manhattan vs. Euclidean), and character movement." },
+  maproute:   { title: () => "City Road Network Shortest Path", sub: "Metropolitan graph navigation across 10 landmarks using A* Euclidean heuristic." },
+  incidents:  { title: () => "Incident Management", sub: "Browse, filter, and triage real-time incidents stored in the SQL database." },
+  services:   { title: () => "Monitored Microservices", sub: "Real-time health status, latency, and uptime from the SQLite services table." },
+  schedules:  { title: () => "On-Call Rotations & Schedules", sub: "Active engineer shift coverage, rotation timeline, and escalation policies." },
+  teams:      { title: () => "Team & Admin Permissions", sub: "Inspect team members and verify Admin IDs against the SQL users table." },
+  reports:    { title: () => "Incident Analytics & Reports", sub: "Aggregated SQL metrics, resolution rates, and microservice rankings." }
 };
 
 window.switchView = function(viewName) {
@@ -629,6 +859,14 @@ window.switchView = function(viewName) {
     loadTeamsView();
   } else if (viewName === 'reports') {
     loadReportsView();
+  } else if (viewName === 'visualizer') {
+    setTimeout(() => {
+      if (typeof window.initMazeEngine === 'function') window.initMazeEngine();
+    }, 50);
+  } else if (viewName === 'maproute') {
+    setTimeout(() => {
+      if (typeof window.initMapPathfinder === 'function') window.initMapPathfinder();
+    }, 50);
   }
 };
 

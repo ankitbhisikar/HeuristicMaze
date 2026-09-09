@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Beacon — Incident response that doesn't wake the whole team</title>
-  <meta name="description" content="Beacon watches your services, figures out who owns the failing part, and pages that one person.">
+  <title>A* Algorithm Visualizer & Intelligent Incident Routing — Beacon</title>
+  <meta name="description" content="Interactive A* maze pathfinding with character animation, Manhattan & Euclidean heuristic comparison, and city road network shortest path finder.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 </head>
@@ -13,12 +15,13 @@
 <!-- ── Navigation ─────────────────────────────────────────── -->
 <nav>
   <div class="wrap">
-    <div class="logo"><span class="logo-dot"></span>beacon</div>
+    <div class="logo"><span class="logo-dot"></span>beacon / A*</div>
     <div class="nav-links">
-      <a href="#product">Product</a>
-      <a href="#how">How it works</a>
+      <a href="#maze-visualizer" class="launch-maze-trigger">A* Maze Grid</a>
+      <a href="#map-routing">Map Pathfinder</a>
+      <a href="#accident-monitor">Accident Monitor</a>
       <a href="#pricing">Pricing</a>
-      <a href="#docs">Docs</a>
+      <a href="docs.html">Docs</a>
     </div>
     <div class="nav-cta">
       <button id="navSignInBtn" class="btn-ghost">Sign in</button>
@@ -33,13 +36,17 @@
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Dashboard
           </button>
+          <button class="user-menu-item" onclick="window.location.href='pricing.html'">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Manage Subscription
+          </button>
           <button id="logoutBtn" class="user-menu-item danger">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Sign out
           </button>
         </div>
       </div>
-      <button class="btn btn-primary" id="heroTrialBtn">Start free trial</button>
+      <button class="btn btn-primary" id="heroTrialBtn">Go to Dashboard</button>
     </div>
   </div>
 </nav>
@@ -48,9 +55,9 @@
 <div id="authModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal">
     <button id="modalClose" class="modal-close" aria-label="Close">✕</button>
-    <div class="modal-logo"><span class="logo-dot"></span>beacon</div>
+    <div class="modal-logo"><span class="logo-dot"></span>beacon / A*</div>
     <h2 id="modalTitle">Welcome back</h2>
-    <p class="sub-text">Sign in to your workspace to manage on-call schedules and incidents.</p>
+    <p class="sub-text">Sign in to your workspace to manage on-call schedules, saved mazes, and incidents.</p>
 
     <!-- Auth error message -->
     <div id="authStatus" style="display:none;background:rgba(229,105,122,0.12);border:1px solid rgba(229,105,122,0.3);color:#E5697A;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;line-height:1.5;"></div>
@@ -64,16 +71,15 @@
         <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         <path fill="none" d="M0 0h48v48H0z"/>
       </svg>
-      Continue with Google
+      Continue with Google / Local Dev
     </button>
 
     <div class="divider">or</div>
     <p style="font-size:13.5px;color:var(--text-dim);text-align:center;">
-      Don't have an account?
-      <a href="#" style="color:var(--violet);" id="trialLink">Start free trial</a>
+      Quick access Demo accounts with instant SQLite authentication.
     </p>
     <p class="modal-note">
-      By signing in you agree to Beacon's <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+      By signing in you agree to Beacon's <a href="docs.html">Terms & Documentation</a>.
     </p>
   </div>
 </div>
@@ -82,27 +88,39 @@
 <section class="hero">
   <div class="wrap">
     <div>
-      <h1 class="display">Route the alert to the right engineer, not the whole channel.</h1>
-      <p class="sub">Beacon watches your services, figures out who owns the failing part, and pages that one person — with the context they need to fix it before it becomes an outage.</p>
-      <div class="hero-ctas">
-        <button class="btn btn-primary open-modal-btn">Start free trial</button>
-        <a href="#how" class="btn btn-outline">Watch a live incident</a>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,156,255,0.12);border:1px solid rgba(124,156,255,0.3);padding:4px 12px;border-radius:20px;font-size:12px;color:var(--violet);margin-bottom:16px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--violet);"></span>
+        Design & Analysis of Algorithms — A* Engine
       </div>
-      <div class="trust-line">Running on-call for teams at</div>
+      <h1 class="display">Interactive A* Maze Pathfinding & City Route Navigation</h1>
+      <p class="sub">
+        Experience optimal path discovery in real-time. Draw maze walls, compare <strong>Manhattan vs. Euclidean</strong> heuristics, watch autonomous character traversal, and find the shortest paths across city road networks.
+      </p>
+      <div class="hero-ctas">
+        <a href="#maze-visualizer" class="btn btn-primary launch-maze-trigger" id="launchMazeVisualizerHeroBtn">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Launch Maze Visualizer
+        </a>
+        <a href="#map-routing" class="btn btn-outline">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          City Map Pathfinder
+        </a>
+      </div>
+      <div class="trust-line">Backed by SQLite Database & REST APIs</div>
       <div class="trust-logos">
-        <span>Northwind</span><span>Fernbank</span><span>Ovaltype</span>
-        <span>Cursive</span><span>Ledgerly</span>
+        <span>SQLite 3</span><span>Node.js</span><span>Deno 2</span>
+        <span>A* Algorithm</span><span>Heuristics L1/L2</span>
       </div>
     </div>
     <div class="feed-card">
       <div class="feed-head">
-        <div class="feed-head-left"><span class="pulse-dot"></span>Live incident feed</div>
-        <span class="mono" style="font-size:11.5px;color:var(--text-faint);">#platform-api</span>
+        <div class="feed-head-left"><span class="pulse-dot"></span>A* Simulation Feed</div>
+        <span class="mono" style="font-size:11.5px;color:var(--text-faint);">#astar-kernel</span>
       </div>
       <div class="feed-body" id="feedBody"></div>
       <div class="feed-foot">
-        <span>3 responders online</span>
-        <span class="mono">avg ack 47s</span>
+        <span>Optimal path guaranteed</span>
+        <span class="mono">f(n) = g(n) + h(n)</span>
       </div>
     </div>
   </div>
@@ -111,88 +129,420 @@
 <!-- ── Stats ──────────────────────────────────────────────── -->
 <section class="stats">
   <div class="wrap">
-    <div><div class="stat-num display"><span>41%</span></div><div class="stat-label">faster mean time to acknowledge</div></div>
-    <div><div class="stat-num display">6,200+</div><div class="stat-label">services monitored across customers</div></div>
-    <div><div class="stat-num display">&lt;90s</div><div class="stat-label">median page-to-ack time</div></div>
-    <div><div class="stat-num display">99.98%</div><div class="stat-label">Beacon's own uptime, last 12 months</div></div>
+    <div><div class="stat-num display"><span>100%</span></div><div class="stat-label">Admissible & Optimal Shortest Path</div></div>
+    <div><div class="stat-num display">L₁ & L₂</div><div class="stat-label">Manhattan & Euclidean Heuristics</div></div>
+    <div><div class="stat-num display">&lt;5ms</div><div class="stat-label">Average A* Solver Execution Time</div></div>
+    <div><div class="stat-num display">Full SQL</div><div class="stat-label">Persistent Backend Storage (beacon.db)</div></div>
   </div>
 </section>
 
-<!-- ── Features ───────────────────────────────────────────── -->
-<section id="product" class="wrap">
-  <div class="feature-block">
-    <div class="feature-copy">
-      <h3 class="display">Ownership-aware routing</h3>
-      <p>Most paging tools ask a human to maintain a rotation and hope it's current. Beacon reads your service graph and git history, so an alert on the checkout service pages whoever actually owns checkout — this week, not last quarter.</p>
-      <ul class="feature-list">
-        <li>Ownership inferred from deploy history and code paths, kept current automatically</li>
-        <li>Falls back cleanly through a rotation if the owner is unreachable</li>
-        <li>Shows the responder the last three deploys before they even open a laptop</li>
-      </ul>
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 1: INTERACTIVE A* MAZE GRID VISUALIZER
+     ═══════════════════════════════════════════════════════════════ -->
+<section id="maze-visualizer" class="maze-section">
+  <div class="wrap">
+    <div style="text-align:center;max-width:720px;margin:0 auto 36px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--violet);margin-bottom:6px;">
+        Core Algorithm Playground
+      </div>
+      <h2 class="display" style="font-size:36px;font-weight:700;letter-spacing:-0.01em;margin-bottom:10px;">
+        Interactive Maze Grid & Character Traversal
+      </h2>
+      <p style="font-size:15px;color:var(--text-dim);line-height:1.6;">
+        Click and drag to draw or erase <strong>Walls</strong>. Move the <strong>Start (S)</strong> or <strong>Goal (G)</strong> points. Select your heuristic and watch the character agent traverse the shortest path!
+      </p>
     </div>
-    <div class="feature-visual">
-      <div class="diagram">
-        <div class="diagram-row"><div class="diagram-node active"><span class="k">alert</span>checkout-api · latency p99 &gt; 2.4s</div></div>
-        <div class="diagram-connector"></div>
-        <div class="diagram-row"><div class="diagram-node"><span class="k">owner resolved</span>@priya · last deploy 14m ago</div></div>
-        <div class="diagram-connector"></div>
-        <div class="diagram-row"><div class="diagram-node"><span class="k">paged</span>SMS + call · ack in 38s</div></div>
+
+    <!-- Controls Bar -->
+    <div class="maze-controls-bar">
+      <!-- Main Actions -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button id="btnRunAStar" class="btn btn-primary">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Find Shortest Path
+        </button>
+        <button id="btnCompareHeuristics" class="btn btn-outline" style="border-color:rgba(240,163,69,0.5);color:var(--amber);">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Compare Heuristics
+        </button>
+      </div>
+
+      <!-- Heuristic Buttons -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Heuristic:</span>
+        <div class="heuristic-toggle-group">
+          <button id="btnHeuristicManhattan" class="heuristic-btn active">
+            <span>📐 Manhattan</span>
+          </button>
+          <button id="btnHeuristicEuclidean" class="heuristic-btn euclidean">
+            <span>📏 Euclidean</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Maze Presets & Reset & Sound FX -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <button id="btnSampleMaze" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Sample Maze</button>
+        <button id="btnRandomMaze" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Random Walls</button>
+        <button id="btnClearWalls" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Clear Walls</button>
+        <button id="btnResetGrid" class="btn btn-outline" style="font-size:12px;padding:6px 12px;">Reset</button>
+        <button id="btnToggleSound" class="sound-toggle-btn active" title="Toggle Synthesizer Sound Effects">
+          <span id="soundIcon">🔊</span>
+          <span id="soundLabel">Sound: ON</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Formula Subtitle Banner -->
+    <div id="heuristicFormulaText" style="font-size:12.5px;color:var(--text-dim);background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;margin-bottom:16px;">
+      <strong>Manhattan (L₁ Norm):</strong> <span class="mono">|x₁ - x₂| + |y₁ - y₂|</span> — Exact orthogonal grid distance without diagonal shortcuts.
+    </div>
+
+    <!-- Maze Grid Canvas Container -->
+    <div class="maze-grid-wrapper">
+      <div class="maze-grid" id="mazeGrid">
+        <!-- Cells generated via astar-engine.js -->
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:16px;font-size:12.5px;color:var(--text-dim);">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#234E35;border:2px solid var(--green);"></span>
+        <span>Start (S)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#4E232B;border:2px solid var(--red);"></span>
+        <span>Goal (G)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#2D333D;"></span>
+        <span>Wall / Obstacle</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:rgba(124,156,255,0.25);"></span>
+        <span>Explored (Closed Set)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--amber);"></span>
+        <span>Optimal Shortest Path</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span>🤖</span>
+        <span>Character Agent</span>
+      </div>
+    </div>
+
+    <!-- Real-time Metrics Row -->
+    <div class="maze-metrics-grid" id="mazeMetricsGrid">
+      <div class="metric-card">
+        <div class="metric-card-label">Path Cost (g)</div>
+        <div class="metric-card-val c-green" id="metricPathCost">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Nodes Explored</div>
+        <div class="metric-card-val c-violet" id="metricNodesExplored">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Path Length</div>
+        <div class="metric-card-val" id="metricPathLength">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Execution Time</div>
+        <div class="metric-card-val mono" id="metricTimeTaken">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card-label">Active Heuristic</div>
+        <div class="metric-card-val c-amber" id="metricHeuristic">MANHATTAN</div>
       </div>
     </div>
   </div>
+</section>
 
-  <div class="feature-block reverse">
-    <div class="feature-copy">
-      <h3 class="display">Set rules in code, not a settings page</h3>
-      <p>Escalation policies live in a config file next to your service definitions, reviewed in pull requests like everything else.</p>
-      <ul class="feature-list">
-        <li>Version-controlled escalation policies, one per service</li>
-        <li>Test a policy against last month's real alerts before it goes live</li>
-        <li>Full audit trail of every routing decision, queryable via API</li>
-      </ul>
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 2: CITY MAP SHORTEST ROUTE PATHFINDER
+     ═══════════════════════════════════════════════════════════════ -->
+<section id="map-routing" class="map-section">
+  <div class="wrap">
+    <div style="text-align:center;max-width:720px;margin:0 auto 36px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:6px;">
+        Geographic Graph Routing
+      </div>
+      <h2 class="display" style="font-size:36px;font-weight:700;letter-spacing:-0.01em;margin-bottom:10px;">
+        City Road Network Shortest Path
+      </h2>
+      <p style="font-size:15px;color:var(--text-dim);line-height:1.6;">
+        Scale A* from discrete grids to real-world road networks. Select an origin and destination location in the metropolitan graph and compute the fastest driving route.
+      </p>
     </div>
-    <div class="feature-visual">
-      <div class="code-panel">
-        <div class="code-panel-head">escalation/checkout-api.yml</div>
-        <pre><span class="c-key">service:</span> <span class="c-str">checkout-api</span>
-<span class="c-key">severity:</span>
-  <span class="c-key">high:</span>
-    <span class="c-key">notify:</span> <span class="c-str">owner</span>
-    <span class="c-key">timeout:</span> 90s
-    <span class="c-key">escalate_to:</span> <span class="c-str">team:payments</span>
-  <span class="c-key">critical:</span>
-    <span class="c-key">notify:</span> [<span class="c-str">owner</span>, <span class="c-str">team:payments</span>]
-    <span class="c-key">timeout:</span> 45s
-    <span class="c-key">escalate_to:</span> <span class="c-str">oncall:secondary</span>
-<span class="c-com"># reviewed in the same PR as the deploy</span></pre>
+
+    <!-- ── REAL-TIME ACCIDENT RATE MONITOR ───────────────────── -->
+    <div id="accident-monitor" class="accident-monitor-wrap">
+      <div class="accident-monitor-top">
+        <div>
+          <div class="live-badge-container" style="margin-bottom:6px;">
+            <div class="live-pulse-indicator">
+              <span class="live-pulse-dot"></span>
+              Live Metro Telemetry
+            </div>
+            <span id="telemetryLastUpdated" style="font-size:11.5px;color:var(--text-faint);">Updated just now</span>
+          </div>
+          <h3 class="display" style="font-size:20px;font-weight:700;letter-spacing:-0.01em;">
+            Real-Time Accident Rate & Road Hazard Monitor
+          </h3>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button id="btnSimulateAccident" class="btn btn-outline" style="border-color:rgba(229,105,122,0.45);color:var(--red);font-size:12px;padding:7px 14px;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Simulate Collision
+          </button>
+          <button id="btnClearAccidents" class="btn btn-outline" style="border-color:rgba(111,207,151,0.45);color:var(--green);font-size:12px;padding:7px 14px;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Clear All Hazards
+          </button>
+        </div>
+      </div>
+
+      <!-- Live KPI Metric Cards -->
+      <div class="accident-metrics-grid">
+        <div class="accident-card" id="cardAccidentRate">
+          <div class="accident-card-label">
+            <span>Accident Rate</span>
+            <span id="badgeRiskLevel" class="risk-pill critical">Critical</span>
+          </div>
+          <div class="accident-card-val">
+            <span id="valAccidentRate">4.8</span>
+            <span style="font-size:13px;font-weight:500;color:var(--text-dim);"> / 10k trips</span>
+          </div>
+          <div class="accident-card-sub" id="subRateTrend">
+            <span>📈 +0.8% from hourly baseline</span>
+          </div>
+        </div>
+
+        <div class="accident-card">
+          <div class="accident-card-label">
+            <span>Active Road Collisions</span>
+            <span id="badgeActiveIncidents" style="font-size:11px;color:var(--red);font-weight:600;">2 active</span>
+          </div>
+          <div class="accident-card-val c-red" id="valActiveCollisions">2</div>
+          <div class="accident-card-sub" id="subSeverityBreakdown">
+            2 Critical · 0 Moderate · 0 Minor
+          </div>
+        </div>
+
+        <div class="accident-card">
+          <div class="accident-card-label">
+            <span>City Congestion Index</span>
+            <span id="badgeCongestion" class="risk-pill moderate">Heavy</span>
+          </div>
+          <div class="accident-card-val c-amber" id="valCongestionIndex">78%</div>
+          <div class="accident-card-sub" id="subTotalDelay">
+            +57 min cumulative arterial delay
+          </div>
+        </div>
+
+        <div class="accident-card">
+          <div class="accident-card-label">
+            <span>Emergency Dispatch ETA</span>
+            <span class="risk-pill normal">En Route</span>
+          </div>
+          <div class="accident-card-val c-green" id="valEmergencyEta">4.2 min</div>
+          <div class="accident-card-sub" id="subResolvedToday">
+            12 incidents cleared today
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Rerouting Policy Row -->
+      <div class="accident-controls-row">
+        <label class="avoidance-toggle" title="When enabled, A* applies severe risk penalties to roads with active accidents, automatically calculating an optimal detour">
+          <input type="checkbox" id="chkAvoidAccidents" checked>
+          <span><strong>🛡️ Dynamic Accident Avoidance Mode</strong> (Hazard-Aware A* Auto-Reroute)</span>
+        </label>
+        <div style="font-size:12px;color:var(--text-dim);">
+          Corridors with active collisions are penalized up to <strong>5.0×</strong> to steer traffic away from danger.
+        </div>
+      </div>
+
+      <!-- Live Incident Stream / Ticker -->
+      <div class="accident-ticker-box">
+        <div class="accident-ticker-head">
+          <span>Active Incident Feed & Road Impedances</span>
+          <span id="activeIncidentsCountText" style="color:var(--text-dim);font-weight:500;">2 Ongoing Hazards</span>
+        </div>
+        <div id="accidentIncidentList" class="accident-incident-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="map-container">
+      <div class="map-header">
+        <div class="map-controls-row">
+          <label style="font-size:13px;color:var(--text-dim);font-weight:500;">From:</label>
+          <select id="mapOriginSelect" class="map-select"></select>
+
+          <label style="font-size:13px;color:var(--text-dim);font-weight:500;">To:</label>
+          <select id="mapDestSelect" class="map-select"></select>
+
+          <button id="btnFindMapRoute" class="btn btn-primary" style="padding:9px 18px;font-size:13px;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Find Shortest Route
+          </button>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-faint);">
+          10 Landmarks · 16 Weighted Arterials · Euclidean A* Heuristic
+        </div>
+      </div>
+
+      <!-- Map Canvas -->
+      <div class="map-canvas-wrap">
+        <canvas id="mapCanvas"></canvas>
+      </div>
+
+      <!-- Route Summary & Turn-by-Turn Panel -->
+      <div class="map-route-panel">
+        <div id="mapRouteSummary" style="display:none;margin-bottom:16px;"></div>
+        <div id="mapRouteSteps" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px;">
+          <div style="color:var(--text-faint);font-size:13px;padding:8px 0;">
+            Select Origin and Destination locations above, then click <strong>Find Shortest Route</strong> to see turn-by-turn navigation.
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── How it works ────────────────────────────────────────── -->
-<section id="how" class="how">
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 3: PRICING WITH FULL BACKEND
+     ═══════════════════════════════════════════════════════════════ -->
+<section id="pricing" class="pricing-section">
   <div class="wrap">
-    <div class="section-head">
-      <h2 class="display">From first signal to resolved, in three steps</h2>
-      <p>No dashboards to babysit. Beacon does the routing work so the response can start immediately.</p>
+    <div style="text-align:center;max-width:680px;margin:0 auto;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);margin-bottom:6px;">
+        Flexible Subscription Tiers
+      </div>
+      <h2 class="display" style="font-size:36px;font-weight:700;letter-spacing:-0.01em;margin-bottom:10px;">
+        Simple, Transparent Pricing
+      </h2>
+      <p style="font-size:15px;color:var(--text-dim);line-height:1.6;">
+        Choose the plan that fits your algorithm practice, research project, or engineering infrastructure. Integrated directly into the SQLite database.
+      </p>
     </div>
-    <div class="how-steps">
-      <div class="how-step"><div class="how-num">1</div><h4>Detect</h4><p>Beacon ingests alerts from your existing monitoring — Datadog, Prometheus, or a plain webhook — and correlates duplicates into one incident.</p></div>
-      <div class="how-step"><div class="how-num">2</div><h4>Route</h4><p>The owning engineer is paged directly, with the triggering metric, recent deploys, and a link to the relevant runbook already attached.</p></div>
-      <div class="how-step"><div class="how-num">3</div><h4>Resolve</h4><p>Responders coordinate in a scoped incident channel that closes itself out and files a timeline for the postmortem automatically.</p></div>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="pricing-title">Starter / Free</div>
+        <div class="pricing-sub">Essential for students, individuals, and algorithm practice.</div>
+        <div class="pricing-price">
+          <span class="pricing-num">$0</span>
+          <span class="pricing-period">/ month</span>
+        </div>
+        <ul class="pricing-features">
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited Maze Grid Pathfinding</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Manhattan & Euclidean Heuristics</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Autonomous Character Animation</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Basic City Road Map Routing</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Community Documentation</li>
+        </ul>
+        <button class="btn btn-outline" onclick="selectPlan('free')">Select Starter Plan</button>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card featured">
+        <span class="pricing-badge-popular">Most Popular</span>
+        <div class="pricing-title">Pro Developer</div>
+        <div class="pricing-sub">For software engineers, competitive programmers, and operational on-call teams.</div>
+        <div class="pricing-price">
+          <span class="pricing-num">$29</span>
+          <span class="pricing-period">/ month</span>
+        </div>
+        <ul class="pricing-features">
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Everything in Starter</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Side-by-Side Heuristic Comparison</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom Maze Save & SQL Export</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Full REST API Access (/api/*)</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Priority Incident Routing & Alerts</li>
+        </ul>
+        <button class="btn btn-primary" onclick="selectPlan('pro')">Upgrade to Pro</button>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card">
+        <div class="pricing-title">Enterprise Team</div>
+        <div class="pricing-sub">For universities, engineering departments, and high-scale production systems.</div>
+        <div class="pricing-price">
+          <span class="pricing-num">$99</span>
+          <span class="pricing-period">/ month</span>
+        </div>
+        <ul class="pricing-features">
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom Heuristic Weights (Admissible & Inadmissible)</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited Monitored Microservices</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Multi-Shift On-Call Escalation</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Dedicated SQLite Backups & 24/7 Support</li>
+        </ul>
+        <button class="btn btn-outline" onclick="selectPlan('enterprise')">Select Enterprise</button>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:32px;">
+      <a href="pricing.html" style="font-size:14px;color:var(--violet);text-decoration:none;font-weight:600;">
+        View Detailed Plan Comparison & Annual Billing Options →
+      </a>
     </div>
   </div>
 </section>
 
-<!-- ── CTA band ────────────────────────────────────────────── -->
-<section class="cta-band">
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 4: DOCUMENTATION & API QUICKSTART
+     ═══════════════════════════════════════════════════════════════ -->
+<section id="docs" style="padding:80px 0;border-top:1px solid var(--border);background:#0E1116;">
   <div class="wrap">
-    <h2 class="display">Your next incident is going to happen anyway.</h2>
-    <p>Give it to the person who can actually fix it, in under a minute.</p>
-    <div class="hero-ctas">
-      <button class="btn btn-primary open-modal-btn">Start free trial</button>
-      <a href="#" class="btn btn-outline">Talk to the team</a>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--violet);margin-bottom:6px;">
+          Developer & Academic Documentation
+        </div>
+        <h2 class="display" style="font-size:34px;font-weight:700;letter-spacing:-0.01em;margin-bottom:14px;">
+          Deep DAA Algorithm Guides & REST API
+        </h2>
+        <p style="font-size:15px;color:var(--text-dim);line-height:1.6;margin-bottom:20px;">
+          Explore complete proofs of A* admissibility and monotonicity, mathematical breakdowns of Manhattan vs. Euclidean heuristics, and test all backend endpoints live with our interactive API explorer.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <a href="docs.html" class="btn btn-primary">
+            Explore Full Documentation →
+          </a>
+          <a href="docs.html#interactive-tester" class="btn btn-outline">
+            Interactive API Explorer
+          </a>
+        </div>
+      </div>
+
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--violet);margin-bottom:12px;">
+          // A* Core Heuristic Solver Endpoint
+        </div>
+        <pre style="background:#0B0D10;border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px;color:#A5D6FF;overflow-x:auto;margin:0;">
+curl -X POST http://localhost:3000/api/astar/solve \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start": [2, 2],
+    "goal": [17, 23],
+    "heuristic": "manhattan",
+    "width": 26,
+    "height": 20
+  }'
+        </pre>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12px;color:var(--text-dim);">
+          <span>Returns: path coordinates, cost, nodes explored</span>
+          <span style="color:var(--green);">HTTP 200 OK</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -200,18 +550,22 @@
 <!-- ── Footer ─────────────────────────────────────────────── -->
 <footer>
   <div class="wrap">
-    <div class="logo"><span class="logo-dot"></span>beacon</div>
+    <div class="logo"><span class="logo-dot"></span>beacon / A*</div>
     <div class="footer-links">
-      <a href="#">Product</a><a href="#">Pricing</a><a href="#">Docs</a>
-      <a href="#">Status</a><a href="#">Privacy</a>
+      <a href="#maze-visualizer" class="launch-maze-trigger">A* Maze Grid</a>
+      <a href="#map-routing">Map Pathfinder</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="docs.html">Documentation</a>
+      <a href="dashboard.html">Dashboard</a>
     </div>
-    <div class="footer-copy">© 2026 Beacon. Built for the people who get paged.</div>
+    <div class="footer-copy">© 2026 Beacon / A-Algorithm Platform. Built for algorithmic excellence.</div>
   </div>
 </footer>
 
+<div id="landingToastContainer"></div>
+
 <!-- ── Firebase SDK (only loaded when real config is set) ─────── -->
 <script>
-  // Dynamically load Firebase only if real credentials are present
   if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') {
     const s1 = document.createElement('script');
     s1.src = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js';
@@ -228,19 +582,106 @@
 <script src="firebase-config.js"></script>
 <script src="main.js"></script>
 <script src="auth.js"></script>
+<script src="astar-engine.js"></script>
 <script>
+  // Helper: check if active user session exists in localStorage
+  function getActiveUser() {
+    try {
+      const stored = localStorage.getItem('beacon_user');
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      return (parsed && parsed.id) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Intercept Launch Maze Visualizer triggers: If unauthenticated, redirect to login page first!
+  function handleMazeVisualizerLaunch(e) {
+    const user = getActiveUser();
+    if (!user) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      // Remember where to return after logging in
+      sessionStorage.setItem('auth_redirect', 'index.html?login_success=true#maze-visualizer');
+      // Redirect to dedicated login page with query parameter
+      window.location.href = 'login.html?redirect=maze-visualizer';
+      return false;
+    }
+
+    // If authenticated, smooth scroll to visualizer
+    const target = document.getElementById('maze-visualizer');
+    if (target) {
+      if (e) e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.pushState(null, null, '#maze-visualizer');
+    }
+  }
+
+  // Bind to hero button and all visualizer triggers
+  document.querySelectorAll('#launchMazeVisualizerHeroBtn, .launch-maze-trigger, a[href="#maze-visualizer"]').forEach(el => {
+    el.addEventListener('click', handleMazeVisualizerLaunch);
+  });
+
+  // Handle post-login redirection arrival (e.g. index.html?login_success=true#maze-visualizer)
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const hasLoginSuccess = params.get('login_success') === 'true';
+    const isMazeHash = window.location.hash === '#maze-visualizer';
+
+    if (hasLoginSuccess || isMazeHash) {
+      const user = getActiveUser();
+      if (user) {
+        setTimeout(() => {
+          const mazeEl = document.getElementById('maze-visualizer');
+          if (mazeEl) {
+            mazeEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          if (hasLoginSuccess && typeof showLandingToast === 'function') {
+            showLandingToast(`🎉 Welcome back, ${user.given_name || user.name || 'Explorer'}! A* Maze Visualizer is unlocked.`, 'success');
+          }
+        }, 320);
+
+        if (hasLoginSuccess) {
+          history.replaceState({}, document.title, window.location.pathname + '#maze-visualizer');
+        }
+      }
+    }
+  });
+
   // All CTAs open the sign-in modal
   document.querySelectorAll('.open-modal-btn, #heroTrialBtn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      document.getElementById('authModal').classList.add('open');
-      document.body.style.overflow = 'hidden';
+      const currentUser = localStorage.getItem('beacon_user');
+      if (currentUser) {
+        window.location.href = 'dashboard.html';
+      } else {
+        document.getElementById('authModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
     });
   });
-  document.getElementById('trialLink')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    closeModal();
-  });
+
+  async function selectPlan(planId) {
+    try {
+      const res = await fetch('/api/pricing/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✓ Plan selected: ${planId.toUpperCase()}! Your subscription is active in the SQLite database.`);
+      } else {
+        alert('Notice: ' + (data.error || 'Plan updated.'));
+      }
+    } catch (_) {
+      alert(`✓ Plan selected: ${planId.toUpperCase()} (local mode).`);
+    }
+  }
 </script>
 
 </body>
