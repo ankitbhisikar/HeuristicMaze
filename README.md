@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # A* Algorithm & City Route Pathfinder Platform
 
 An interactive algorithm visualization and geographic pathfinding suite built for **Design and Analysis of Algorithms (DAA)**. Backed by an embedded SQLite database and a high-performance REST API.
@@ -35,18 +34,31 @@ An interactive algorithm visualization and geographic pathfinding suite built fo
   - Execution runtime (ms)
   - Algorithmic analysis explaining which heuristic pruned more nodes and why.
 
-### 4. City Road Network Map Pathfinder
+### 4. City Road Network Map Pathfinder & Hazard-Aware A*
 - Scale A* from discrete grids to weighted bidirectional road networks.
 - 10 metropolitan landmarks (University, Airport, Tech Park, Central Station, Medical Center, Harbor, Mall, Stadium, Logistics Zone, Gardens).
-- Visual turn-by-turn navigation steps and animated transit marker along the computed shortest highway/arterial route.
+- Visual turn-by-turn navigation steps and animated vehicle along the computed shortest highway/arterial route.
+- **Hazard-Aware Routing**: Dynamically steers routes around high-risk collision corridors with up to 5.0× avoidance weighting.
 
-### 5. Working Pricing & Subscription Backend
+### 5. Real-Time Accident Rate & Road Hazard Monitor
+- Live radar telemetry header with real-time rate updates per 10k trips.
+- Active road collisions counter with severity categorization (Critical, Moderate, Minor).
+- City congestion index and total arterial delay tracking.
+- Interactive collision simulation (`Simulate Collision`), hazard clearing (`Clear All Hazards`), and live incident stream.
+- Glowing dashed red/amber warning corridors and speed drop tags rendered on the road map canvas.
+
+### 6. Web Audio API Synthesizer Sound Engine & Density Control
+- Multi-density polyphonic audio architecture (`ULTRA`, `HIGH`, `NORMAL`).
+- Spatial stereo panning across grid coordinates.
+- Multi-voice acoustic instruments for wall drawing, search pings, character steps, victory fanfare, and sirens.
+
+### 7. Working Pricing & Subscription Backend
 - Three subscription tiers: **Starter (Free)**, **Pro Developer ($29/mo)**, and **Enterprise ($99/mo)**.
 - Monthly & Annual billing switchers.
 - Connected to SQLite backend via `POST /api/pricing/subscribe` which updates user account tiers directly in `beacon.db`.
 - Dedicated pricing page: [pricing.html](file:///c:/Users/Ankit/OneDrive/Desktop/daa/pricing.html).
 
-### 6. Comprehensive Documentation & Live API Explorer
+### 8. Comprehensive Documentation & Live API Explorer
 - Complete mathematical proofs and formulations of A*, admissibility, and monotonicity.
 - Live REST API Console to test all endpoints from the browser.
 - Dedicated documentation page: [docs.html](file:///c:/Users/Ankit/OneDrive/Desktop/daa/docs.html).
@@ -60,7 +72,11 @@ An interactive algorithm visualization and geographic pathfinding suite built fo
 | `POST` | `/api/astar/solve` | Solves grid pathfinding with selected heuristic |
 | `POST` | `/api/astar/compare` | Compares Manhattan vs. Euclidean heuristics |
 | `GET` | `/api/map/graph` | Returns metropolitan road graph nodes & edges |
-| `POST` | `/api/map/route` | Solves shortest driving path between two landmarks |
+| `POST` | `/api/map/route` | Solves shortest driving path with optional accident avoidance |
+| `GET` | `/api/accidents/stats` | Returns real-time accident rates, congestion, and hazard feed |
+| `POST` | `/api/accidents/simulate-random` | Simulates a dynamic collision hazard |
+| `POST` | `/api/accidents/resolve/:id` | Clears a specific road accident corridor |
+| `POST` | `/api/accidents/clear` | Clears all active accidents across the network |
 | `GET` | `/api/pricing/plans` | Fetches subscription tiers from SQLite |
 | `POST` | `/api/pricing/subscribe` | Upgrades/changes user subscription tier |
 | `GET` | `/api/pricing/my-subscription` | Fetches active subscription for user |
@@ -77,9 +93,11 @@ An interactive algorithm visualization and geographic pathfinding suite built fo
    ```
 2. Open your browser at:
    - **Main App & Maze Visualizer**: [http://localhost:3000](http://localhost:3000)
+   - **Accident Rate Monitor**: [http://localhost:3000/#accident-monitor](http://localhost:3000/#accident-monitor)
    - **Documentation**: [http://localhost:3000/docs.html](http://localhost:3000/docs.html)
    - **Pricing**: [http://localhost:3000/pricing.html](http://localhost:3000/pricing.html)
    - **Dashboard**: [http://localhost:3000/dashboard.html](http://localhost:3000/dashboard.html)
-=======
-# A*-Algorithm
->>>>>>> e632752286d8f56d138192404318471fc49c8ec3
+
+## License
+
+MIT License
